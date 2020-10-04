@@ -56,6 +56,19 @@ td {
   border-radius: 5px;
 }
 
+/* MODAL */
+body .ant-modal { /* Width */
+  display: grid;
+  max-width: 80%;
+  width: auto !important;
+}
+
+.ant-modal-header {
+  border-bottom-color: black;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
 /* BUTTON */
 .btn-data-archive {
   grid-column-start: 2;

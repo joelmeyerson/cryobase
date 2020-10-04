@@ -6,8 +6,6 @@ import {
 import { CloudDownloadOutlined } from '@ant-design/icons';
 import jsondata from './data-archive.json';
 
-console.log(jsondata)
-
 const columns = [
   {
     title: 'Dataset',
