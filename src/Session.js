@@ -8,9 +8,7 @@ import {
   DatePicker,
   InputNumber,
   Switch, } from 'antd';
-import Filebrowser from './Filebrowser.js';
-
-var path = require('path');
+import { FolderAddOutlined, } from '@ant-design/icons';
 
 export default function Session () {
 
@@ -18,7 +16,9 @@ export default function Session () {
     <Card title="Session Builder" bordered={true} >
       <Form labelCol={{ span: 10 }} wrapperCol={{ span: 20 }} layout="horizontal" size={"small"} >
         <Form.Item label="Local Data Path" >
-          <Input addonAfter={<Filebrowser />} />
+          <Input addonAfter={
+              <FolderAddOutlined />
+          } />
         </Form.Item>
 
         <Form.Item label="Dataset Name" validateStatus="warning" >

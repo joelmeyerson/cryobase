@@ -1,6 +1,7 @@
 {
   "name": "prototype",
   "version": "0.1.0",
+  "main": "main.js",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
@@ -15,10 +16,11 @@
     "react-scripts": "3.4.3"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "electron .",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "electron-start": "set NODE_ENV=development&&electron ."
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -37,6 +39,7 @@
   },
   "devDependencies": {
     "@ant-design/icons": "^4.2.2",
-    "electron": "^10.1.2"
+    "electron": "^6.1.12",
+    "electron-prebuilt": "^1.4.13"
   }
 }

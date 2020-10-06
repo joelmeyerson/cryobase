@@ -17,15 +17,19 @@ import Jobs from './Jobs.js';
 import Settings from './Settings.js';
 import Login from './Login.js';
 
+const fs = require('fs');
+const path = require('path');
+
 export const getAccessToken = () => Cookies.get('access_token')
 export const getRefreshToken = () => Cookies.get('refresh_token')
 export const isAuthenticated = () => !!getAccessToken()
 
 export default function App() {
+
   return (
     <Switch>
-      <Route path='/' exact component={PublicLayout} />
-      <Route path='/app' render={(props) => (<ProtectedLayout {...props} isAuthed={true} /> )} />
+      <Route path='/app' exact component={PublicLayout} />
+      <Route path='/' render={(props) => (<ProtectedLayout {...props} isAuthed={true} /> )} />
     </Switch>
   );
 }
