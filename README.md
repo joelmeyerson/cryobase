@@ -1,3 +1,13 @@
+## Starting prototype
+
+### `npm run start`
+Launches server at localhost:3000
+
+### `npm run electron-start`
+Launches Electron displaying localhost:3000
+
+/////////////////////////////////////////////////////////////////////////////////////
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
