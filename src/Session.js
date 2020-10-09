@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Form,
   Card,
@@ -7,30 +7,36 @@ import {
   Select,
   DatePicker,
   InputNumber,
-  Switch, } from 'antd';
-import { FolderAddOutlined, } from '@ant-design/icons';
+  Switch
+} from "antd";
+import { FolderAddOutlined } from "@ant-design/icons";
 
-export default function Session () {
-
+export default function Session() {
   return (
-    <Card title="Session Builder" bordered={true} >
-      <Form labelCol={{ span: 10 }} wrapperCol={{ span: 20 }} layout="horizontal" size={"small"} >
-        <Form.Item label="Local Data Path" >
-          <Input addonAfter={
-              <FolderAddOutlined />
-          } />
+    <Card title="Session Builder" bordered={true}>
+      <Form
+        labelCol={{ span: 10 }}
+        wrapperCol={{ span: 20 }}
+        layout="horizontal"
+        size={"small"}
+      >
+        <Form.Item label="Local Data Path">
+          <Input addonAfter={<FolderAddOutlined />} />
         </Form.Item>
 
-        <Form.Item label="Dataset Name" validateStatus="warning" >
+        <Form.Item label="Dataset Name" validateStatus="warning">
           <Input />
         </Form.Item>
 
-        <Form.Item label="Date" >
+        <Form.Item label="Date">
           <DatePicker />
         </Form.Item>
 
         <Form.Item label="Sample Information">
-          <Input.TextArea autoSize={{minRows: 4, maxRows: 4}} allowClear={true} />
+          <Input.TextArea
+            autoSize={{ minRows: 4, maxRows: 4 }}
+            allowClear={true}
+          />
         </Form.Item>
 
         <Form.Item label="Microscope">
@@ -83,8 +89,7 @@ export default function Session () {
         <Form.Item label="Start">
           <Button>Start Transfer</Button>
         </Form.Item>
-
       </Form>
     </Card>
   );
-};
+}
