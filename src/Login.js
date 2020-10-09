@@ -1,11 +1,17 @@
-import React from "react";
-import { Form, Button, Checkbox, Input } from "antd";
+import React from 'react';
+import {
+  Form,
+  Button,
+  Checkbox,
+  Input, } from 'antd';
 
-import { UserOutlined, LockOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  LockOutlined, } from '@ant-design/icons';
 
-const onFinish = values => {
-  console.log("Received values of form: ", values);
-};
+  const onFinish = (values) => {
+    console.log('Received values of form: ', values);
+  };
 
 class Login extends React.Component {
   render() {
@@ -14,7 +20,7 @@ class Login extends React.Component {
         name="normal_login"
         className="login-form"
         initialValues={{
-          remember: false
+          remember: false,
         }}
         onFinish={onFinish}
       >
@@ -23,22 +29,19 @@ class Login extends React.Component {
           rules={[
             {
               required: true,
-              message: "Please input your Username!"
-            }
+              message: 'Please input your Username!',
+            },
           ]}
         >
-          <Input
-            prefix={<UserOutlined className="site-form-item-icon" />}
-            placeholder="Username"
-          />
+          <Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="Username" />
         </Form.Item>
         <Form.Item
           name="password"
           rules={[
             {
               required: true,
-              message: "Please input your Password!"
-            }
+              message: 'Please input your Password!',
+            },
           ]}
         >
           <Input
@@ -48,17 +51,14 @@ class Login extends React.Component {
           />
         </Form.Item>
         <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            className="login-form-button"
-          >
+          <Button type="primary" htmlType="submit" className="login-form-button">
             Log in
           </Button>
         </Form.Item>
       </Form>
     );
-  }
-}
+  };
+};
+
 
 export default Login;

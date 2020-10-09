@@ -1,27 +1,52 @@
 // Modules to control application life and create native browser window
 const {app, BrowserWindow, dialog} = require('electron')
 const path = require('path')
+const os = require('os')
+
 const electron = require("electron")
 const {ipcMain} = require('electron')
 
 const env = process.env.NODE_ENV || 'development';
 
+// Enable live reload for Electron too
+require('electron-reload')(__dirname, {
+    // Note that the path to electron may vary according to the main file
+    electron: require(`${__dirname}/node_modules/electron`)
+});
+
 function createWindow () {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,
+      contextIsolation: true
     }
   })
 
+  // Handle path selection through file browser
+  ipcMain.handle('selectDirectory', async (event, arg) => {
+
+    const path = await dialog.showOpenDialog(mainWindow,
+      {properties: ['openDirectory']}
+    ).then(result => {
+      //console.log(result.canceled)
+      //console.log(result.filePaths)
+      return result.filePaths
+    }).catch(err => {
+      console.log(err)
+    })
+    return path
+  })
+
   // and load the index.html of the app.
+  //mainWindow.loadFile('index.html')
   mainWindow.loadURL('http://localhost:3000/')
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+   mainWindow.webContents.openDevTools()
 }
 
 // This method will be called when Electron has finished
@@ -29,6 +54,10 @@ function createWindow () {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow()
+
+  BrowserWindow.addDevToolsExtension(
+     path.join(os.homedir(), '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.8.2_0')
+  )
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
