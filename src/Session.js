@@ -9,6 +9,7 @@ import {
   InputNumber,
   Switch, } from 'antd';
 import { FolderAddOutlined, } from '@ant-design/icons';
+import { fs } from 'fs';
 
 export default function Session () {
 
@@ -67,6 +68,17 @@ export default function Session () {
       ...metaData,
       [key]: value})
   }
+
+  // Handle start transfer session
+  async function startSession() {
+    // Check metaData for completeness
+    // Create S3 bucket or S3 deep glacier vault
+    // Start transfer from local directory to S3 using fs, chokidar, AWS SDK, Node.js stream object
+    const localPath = metaData.path[0]
+    const files = await window.electron.listDirectory(localPath)
+    console.log(files)
+  }
+
   return (
     <Card title="Session Builder" bordered={true} >
       <Form labelCol={{ span: 10 }} wrapperCol={{ span: 20 }} layout="horizontal" size={"small"} >
@@ -138,7 +150,7 @@ export default function Session () {
         </Form.Item>
 
         <Form.Item label="Start">
-          <Button>Start Transfer</Button>
+          <Button onClick={startSession}>Start Transfer</Button>
         </Form.Item>
 
       </Form>

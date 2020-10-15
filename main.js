@@ -1,7 +1,8 @@
 // Modules to control application life and create native browser window
 const {app, BrowserWindow, dialog} = require('electron')
-const path = require('path')
 const os = require('os')
+const path = require('path')
+const fs = require('fs').promises
 
 const electron = require("electron")
 const {ipcMain} = require('electron')
@@ -21,25 +22,34 @@ function createWindow () {
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: true,
+      nodeIntegration: false,
       contextIsolation: true
     }
   })
 
-  // Handle path selection through file browser
+  // Handle path selection through file browser (call from preload.js)
   ipcMain.handle('selectDirectory', async (event, arg) => {
 
     const path = await dialog.showOpenDialog(mainWindow,
       {properties: ['openDirectory']}
     ).then(result => {
-      //console.log(result.canceled)
-      //console.log(result.filePaths)
       return result.filePaths
     }).catch(err => {
       console.log(err)
     })
     return path
   })
+
+// Handle local data path listing (call from preload.js)
+ipcMain.handle('listDirectory', async (event, arg) => {
+
+  const fileNames = await fs.readdir(arg).then(files => {
+    return files
+  }).catch(err => {
+    console.log(err)
+  })
+  return fileNames
+})
 
   // and load the index.html of the app.
   //mainWindow.loadFile('index.html')
