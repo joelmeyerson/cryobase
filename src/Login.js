@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Form,
   Button,
-  Checkbox,
   Input, } from 'antd';
 
 import {

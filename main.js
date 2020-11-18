@@ -2,10 +2,12 @@
 const {app, BrowserWindow, dialog} = require('electron')
 const os = require('os')
 const path = require('path')
-const fs = require('fs').promises
+const fs = require('fs')
+const fsp = require('fs').promises
 
 const electron = require("electron")
 const {ipcMain} = require('electron')
+const AWS = require('aws-sdk');
 
 const env = process.env.NODE_ENV || 'development';
 
@@ -21,15 +23,16 @@ function createWindow () {
     width: 1200,
     height: 800,
     webPreferences: {
+      worldSafeExecuteJavaScript: true,
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      webSecurity: true
     }
   })
 
   // Handle path selection through file browser (call from preload.js)
   ipcMain.handle('selectDirectory', async (event, arg) => {
-
     const path = await dialog.showOpenDialog(mainWindow,
       {properties: ['openDirectory']}
     ).then(result => {
@@ -42,13 +45,50 @@ function createWindow () {
 
 // Handle local data path listing (call from preload.js)
 ipcMain.handle('listDirectory', async (event, arg) => {
-
-  const fileNames = await fs.readdir(arg).then(files => {
+  const fileNames = await fsp.readdir(arg).then(files => {
     return files
   }).catch(err => {
     console.log(err)
   })
   return fileNames
+})
+
+// Create bucket and start transfer (call from preload.js)
+ipcMain.handle('createSession', async (event, arg) => {
+  AWS.config = new AWS.Config(arg.awscred);
+
+  AWS.config.getCredentials(function(err) {
+    if (err) { // credentials not loaded
+      console.log(err.stack);
+      return "badcredentials"
+    }
+    else { // credentials loaded
+      console.log("Access key:", AWS.config.credentials.accessKeyId);
+    }
+  });
+
+  const s3 = new AWS.S3(arg.awscred);
+  const params = {
+    Bucket: arg.sessiondata.dataset,
+   };
+
+  await s3.createBucket(params).promise(
+  ).then(data => {
+    console.log(data);
+  }).catch(err => {
+    console.log(err, err.stack); // an error occurred
+  })
+
+  var targetFile = arg.sessiondata.path.concat("/","file1.mrc")
+  const fileContent = fs.readFileSync(targetFile);
+  var paramsup = {Bucket: arg.dataset, Key: 'file1.mrc', Body: fileContent};
+  await s3.upload(paramsup).promise(
+  ).then(data => {
+    console.log(data);
+  }).catch(err => {
+    console.log(err, err.stack); // an error occurred
+  })
+
 })
 
   // and load the index.html of the app.

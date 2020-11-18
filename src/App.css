@@ -18,8 +18,7 @@
 
 .ant-layout-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-gap: 1rem;
+  grid-template-columns: 1fr;
 }
 
 /* FORM */
@@ -32,8 +31,14 @@
   min-height: 400px;
 }
 
-td {
-  height: 150px;
+.ant-table-thead > tr > th {
+  height: 5px;
+  padding: 4px;
+}
+
+.ant-table-tbody > tr > td {
+  height: 5px;
+  padding: 4px;
 }
 
 /* CARD */
@@ -88,4 +93,27 @@ body .ant-modal { /* Width */
 .btn-settings {
   grid-column-start: 6;
   grid-row-start: 1;
+}
+
+/* SESSION */
+#session .ant-card-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 1rem;
+}
+
+#sessionbuilder {
+  grid-column-start: 1;
+}
+
+#sessioninfo {
+  grid-column-start: 2;
+}
+
+#sessionfilecount {
+  grid-column-start: 2;
+  margin: 10px;
+  padding: 5px;
+  background: #CCD2DB;
+  border-radius: 5px;
 }

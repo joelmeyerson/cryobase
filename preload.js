@@ -11,8 +11,12 @@ contextBridge.exposeInMainWorld(
 
     listDirectory: async (path) => {
       const fileList = await ipcRenderer.invoke('listDirectory', path)
-      //console.log(fileList)
       return fileList
+    },
+
+    createSession: async (awscred, sessiondata) => {
+      const status = await ipcRenderer.invoke('createSession', awscred, sessiondata)
+      return status
     }
   }
 )

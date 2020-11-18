@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Layout,
   Button, } from 'antd';
@@ -7,22 +7,24 @@ import {
   CloudUploadOutlined,
   DashboardOutlined,
   SettingOutlined, } from '@ant-design/icons';
-import { BrowserRouter, Route, Switch, Link, Redirect } from "react-router-dom";
+import { BrowserRouter, Route, Switch, Link } from "react-router-dom";
 import Cookies from 'js-cookie'
-import aws from 'aws-sdk/dist/aws-sdk-react-native';
 import './App.css';
 import Archive from './Archive.js';
 import Session from './Session.js';
-import Jobs from './Jobs.js';
 import Settings from './Settings.js';
 import Login from './Login.js';
-
-const fs = require('fs');
-const path = require('path');
+import AWS from 'aws-sdk';
 
 export const getAccessToken = () => Cookies.get('access_token')
 export const getRefreshToken = () => Cookies.get('refresh_token')
 export const isAuthenticated = () => !!getAccessToken()
+
+const awsCredentials = {
+  accessKeyId: "AKIAIWP5WR2RDDD344KQ",
+  secretAccessKey: "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",
+  region: "us-east-1" }
+AWS.config = new AWS.Config(awsCredentials);
 
 export default function App() {
 
@@ -55,9 +57,6 @@ export const ProtectedLayout = (props) =>
         <Link to="/session" className="btn-manager" >
           <Button icon={<CloudUploadOutlined />}>Session Manager</Button>
         </Link>
-        <Link to="/jobs" className="btn-jobs" >
-          <Button icon={<DashboardOutlined />}>Jobs</Button>
-        </Link>
         <Link to="/settings" className="btn-settings" >
           <Button icon={<SettingOutlined />}>Settings</Button>
         </Link>
@@ -68,10 +67,7 @@ export const ProtectedLayout = (props) =>
             <Archive />
           </Route>
           <Route path={["/app", "/session"]}>
-            <Session />
-          </Route>
-          <Route path="/jobs">
-            <Jobs />
+            <Session awscred={AWS.config}/>
           </Route>
           <Route path="/settings">
             <Settings />
