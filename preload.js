@@ -14,8 +14,8 @@ contextBridge.exposeInMainWorld(
       return fileList
     },
 
-    createSession: async (awscred, sessiondata) => {
-      const status = await ipcRenderer.invoke('createSession', awscred, sessiondata)
+    transferData: async (sessiondata) => {
+      const status = await ipcRenderer.invoke('transferData', sessiondata)
       return status
     }
   }

@@ -1,5 +1,5 @@
 // Modules to control application life and create native browser window
-const {app, BrowserWindow, dialog} = require('electron')
+const {app, session, BrowserWindow, dialog} = require('electron')
 const os = require('os')
 const path = require('path')
 const fs = require('fs')
@@ -8,6 +8,8 @@ const fsp = require('fs').promises
 const electron = require("electron")
 const {ipcMain} = require('electron')
 const AWS = require('aws-sdk');
+const fse = require('fs-extra');
+const appName = app.getName();
 
 const env = process.env.NODE_ENV || 'development';
 
@@ -16,6 +18,11 @@ require('electron-reload')(__dirname, {
     // Note that the path to electron may vary according to the main file
     electron: require(`${__dirname}/node_modules/electron`)
 });
+
+async function clearCache () {
+  await session.defaultSession.clearCache();
+  await session.defaultSession.clearStorageData();
+}
 
 function createWindow () {
   // Create the browser window.
@@ -53,43 +60,39 @@ ipcMain.handle('listDirectory', async (event, arg) => {
   return fileNames
 })
 
-// Create bucket and start transfer (call from preload.js)
-ipcMain.handle('createSession', async (event, arg) => {
-  AWS.config = new AWS.Config(arg.awscred);
+// Transfer data (call from preload.js)
+ipcMain.handle('transferData', async (event, arg) => {
+  var s3 = new AWS.S3()
+  const bucket = 'apptestbucket10'
 
-  AWS.config.getCredentials(function(err) {
-    if (err) { // credentials not loaded
-      console.log(err.stack);
-      return "badcredentials"
-    }
-    else { // credentials loaded
-      console.log("Access key:", AWS.config.credentials.accessKeyId);
-    }
-  });
+  if (arg.dataset === true) { // If arg contains "dataset" property then must be metadata
+    const metadata = JSON.stringify(arg)
+    var file = "metadata-" + arg.dataid + ".JSON"
+    var filecontent = metadata
+  }
+  else {
+    var file = arg.file
+    var targetfile = arg.path.concat("/",file) // Target file for transfer
+    var filecontent = fs.readFileSync(targetfile); // Store file
+  }
 
-  const s3 = new AWS.S3(arg.awscred);
+  var keyname = "user/" + arg.userid + "/" + arg.dataid + "/" + file; // Object location inside bucket
   const params = {
-    Bucket: arg.sessiondata.dataset,
-   };
-
-  await s3.createBucket(params).promise(
+    Bucket: bucket,
+    Key: keyname,
+    Body: filecontent
+  };
+  // Transfer file
+  var transferstatus = await s3.upload(params).promise(
   ).then(data => {
     console.log(data);
+    return 1
   }).catch(err => {
-    console.log(err, err.stack); // an error occurred
+    console.log(err, err.stack); // Error occurred
+    return 0
   })
-
-  var targetFile = arg.sessiondata.path.concat("/","file1.mrc")
-  const fileContent = fs.readFileSync(targetFile);
-  var paramsup = {Bucket: arg.dataset, Key: 'file1.mrc', Body: fileContent};
-  await s3.upload(paramsup).promise(
-  ).then(data => {
-    console.log(data);
-  }).catch(err => {
-    console.log(err, err.stack); // an error occurred
-  })
-
-})
+  return transferstatus
+});
 
   // and load the index.html of the app.
   //mainWindow.loadFile('index.html')
@@ -103,6 +106,7 @@ ipcMain.handle('createSession', async (event, arg) => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  clearCache()
   createWindow()
 
   BrowserWindow.addDevToolsExtension(

@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Layout,
   Button, } from 'antd';
 import {
   HddOutlined,
   CloudUploadOutlined,
-  DashboardOutlined,
   SettingOutlined, } from '@ant-design/icons';
 import { BrowserRouter, Route, Switch, Link } from "react-router-dom";
 import Cookies from 'js-cookie'
@@ -14,24 +13,53 @@ import Archive from './Archive.js';
 import Session from './Session.js';
 import Settings from './Settings.js';
 import Login from './Login.js';
+
+// Import AWS
 import AWS from 'aws-sdk';
+import { withAuthenticator, AmplifySignOut } from '@aws-amplify/ui-react';
+import { Auth } from 'aws-amplify';
+import { Amplify } from 'aws-amplify';
+import { CognitoUserPool, CognitoUserAttribute, CognitoUser, CognitoIdentityCredentials, CognitoCachingCredentialsProvider } from 'amazon-cognito-identity-js';
 
-export const getAccessToken = () => Cookies.get('access_token')
-export const getRefreshToken = () => Cookies.get('refresh_token')
-export const isAuthenticated = () => !!getAccessToken()
+// AWS authentication
+var data = {
+    UserPoolId: 'us-east-1_jfISkLHGg',
+    ClientId: '59l85geov36gnrk0pj9rfg45dv',
+  };
 
-const awsCredentials = {
-  accessKeyId: "AKIAIWP5WR2RDDD344KQ",
-  secretAccessKey: "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",
-  region: "us-east-1" }
-AWS.config = new AWS.Config(awsCredentials);
+var userPool = new CognitoUserPool(data);
+var cognitoUser = userPool.getCurrentUser();
+if (cognitoUser != null) {
+	cognitoUser.getSession(function(err, result) {
+		if (result) {
+			console.log('You are now logged in.');
 
-export default function App() {
+      // Initialize the Amazon Cognito credentials provider
+      AWS.config.region = 'us-east-1'; // Region
+      AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+        IdentityPoolId: 'us-east-1:c6729a0c-1214-4b75-8059-2b62345c0427',
+        Logins: {
+					'cognito-idp.us-east-1.amazonaws.com/us-east-1_jfISkLHGg': result.getIdToken().getJwtToken()
+				}
+      });
+		}
+	});
+}
+
+function App() {
+
+  const [transferState, setTransferState] = useState(false);
+  const [transferCount, setTransferCount] = useState(0);
 
   return (
     <Switch>
       <Route path='/app' exact component={PublicLayout} />
-      <Route path='/' render={(props) => (<ProtectedLayout {...props} isAuthed={true} /> )} />
+      <Route path='/' render={(props) => (<ProtectedLayout
+        transferstate={transferState}
+        settransferstate={setTransferState}
+        transfercount={transferCount}
+        settransfercount={setTransferCount}
+      /> )} />
     </Switch>
   );
 }
@@ -51,6 +79,7 @@ export const ProtectedLayout = (props) =>
   <BrowserRouter>
     <Layout>
       <Layout.Header>
+        <AmplifySignOut />
         <Link to="/archive" className="btn-data-archive" >
           <Button icon={<HddOutlined />}>Data Archive</Button>
         </Link>
@@ -67,7 +96,13 @@ export const ProtectedLayout = (props) =>
             <Archive />
           </Route>
           <Route path={["/app", "/session"]}>
-            <Session awscred={AWS.config}/>
+            <Session
+              user={cognitoUser}
+              transferstate={props.transferstate}
+              settransferstate={props.settransferstate}
+              transfercount={props.transfercount}
+              settransfercount={props.settransfercount}
+            />
           </Route>
           <Route path="/settings">
             <Settings />
@@ -78,3 +113,5 @@ export const ProtectedLayout = (props) =>
       </Layout.Footer>
     </Layout>
   </BrowserRouter>
+
+export default withAuthenticator(App)
