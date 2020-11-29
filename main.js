@@ -11,6 +11,7 @@ const AWS = require('aws-sdk');
 const fse = require('fs-extra');
 const appName = app.getName();
 
+const s3 = new AWS.S3()
 const env = process.env.NODE_ENV || 'development';
 
 // Enable live reload for Electron too
@@ -62,15 +63,15 @@ ipcMain.handle('listDirectory', async (event, arg) => {
 
 // Transfer data (call from preload.js)
 ipcMain.handle('transferData', async (event, arg) => {
-  var s3 = new AWS.S3()
   const bucket = 'apptestbucket10'
 
-  if (arg.dataset === true) { // If arg contains "dataset" property then must be metadata
+  if (typeof(arg.dataset) !== 'undefined') { // If arg contains "dataset" property then must be metadata for upload
     const metadata = JSON.stringify(arg)
-    var file = "metadata-" + arg.dataid + ".JSON"
+    var file = arg.dataid + "-meta.JSON"
     var filecontent = metadata
+    console.log(filecontent)
   }
-  else {
+  else { // Otherwise request is for data transfer
     var file = arg.file
     var targetfile = arg.path.concat("/",file) // Target file for transfer
     var filecontent = fs.readFileSync(targetfile); // Store file
@@ -82,6 +83,7 @@ ipcMain.handle('transferData', async (event, arg) => {
     Key: keyname,
     Body: filecontent
   };
+
   // Transfer file
   var transferstatus = await s3.upload(params).promise(
   ).then(data => {

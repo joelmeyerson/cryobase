@@ -48,15 +48,24 @@ if (cognitoUser != null) {
 
 function App() {
 
+  const [uiToggle, setUiToggle] = useState(false)
+  const [metaData, setMetaData] = useState({})
   const [transferState, setTransferState] = useState(false);
+  const [uploadState, setUploadState] = useState(false);
   const [transferCount, setTransferCount] = useState(0);
 
   return (
     <Switch>
       <Route path='/app' exact component={PublicLayout} />
       <Route path='/' render={(props) => (<ProtectedLayout
+        uitoggle={uiToggle}
+        setuitoggle={setUiToggle}
+        metadata={metaData}
+        setmetadata={setMetaData}
         transferstate={transferState}
         settransferstate={setTransferState}
+        uploadstate={uploadState}
+        setuploadstate={setUploadState}
         transfercount={transferCount}
         settransfercount={setTransferCount}
       /> )} />
@@ -98,8 +107,14 @@ export const ProtectedLayout = (props) =>
           <Route path={["/app", "/session"]}>
             <Session
               user={cognitoUser}
+              uitoggle={props.uitoggle}
+              setuitoggle={props.setuitoggle}
+              metadata={props.metadata}
+              setmetadata={props.setmetadata}
               transferstate={props.transferstate}
               settransferstate={props.settransferstate}
+              uploadstate={props.uploadstate}
+              setuploadstate={props.setuploadstate}
               transfercount={props.transfercount}
               settransfercount={props.settransfercount}
             />
@@ -115,3 +130,4 @@ export const ProtectedLayout = (props) =>
   </BrowserRouter>
 
 export default withAuthenticator(App)
+//export default App
