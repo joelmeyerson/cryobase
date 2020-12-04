@@ -8,7 +8,8 @@ import {
   DatePicker,
   InputNumber,
   Switch,
-  Table, } from 'antd';
+  Table,
+  Divider, } from 'antd';
 import { FolderAddOutlined, ContainerOutlined, LoadingOutlined, } from '@ant-design/icons';
 const AWS = require('aws-sdk');
 
@@ -16,26 +17,9 @@ export default function Session (props) {
 
   const [form] = Form.useForm() // Create ANTD form
 
-  // Custom empty table display (locale)
-  const localeOn = {
-    emptyText: (
-      <div style={{ fontSize: "40px" }}>
-        <ContainerOutlined />
-      </div>
-    )
-  }
-  const localeOff = {
-    emptyText: (
-      <div>
-      </div>
-    )
-  }
-
   // State declarations
   const [pathName, setPathName] = useState({path: ""});
-  const [fileList, setFileList] = useState([{key: "", name: ""}]);
   const [tableLoading, setTableLoading] = useState(false);
-  const [tableLocale, setTableLocale] = useState(localeOn);
 
   // Table set up
   const tableColumns = [
@@ -56,58 +40,44 @@ export default function Session (props) {
       </div>
     )
   }
+  // Reset file table when component reloads
+  useEffect(() => {
+    props.setfilelist([])
+  }, [])
 
-  // Update form fields when metaData state updates
+  // Update form fields when pathName state updates
   useEffect(() => {
     form.setFieldsValue(pathName)
     populateTable()
   }, [pathName])
 
-  // Handle metadata upload
-  useEffect(() => {
-    transferMetaData(props.metadata) // Start transfer for the file
-  }, [props.metadata])
-
-  // Handle data upload
-  useEffect(() => {
-    if (props.transferstate == true && props.uploadstate == false && props.transfercount < fileList.length) {
-      var transferparams = {
-      file: fileList[props.transfercount].name,
-      dataid: props.metadata.dataid,
-      path: props.metadata.path,
-      userid: props.metadata.userid
-      }
-    transferFile(transferparams) // Start transfer for the file
-    }
-    else if (props.transferstate == true && props.transfercount == fileList.length) {
-      props.settransferstate(false)
-      props.setuitoggle(false)
-      console.log("done")
-    }
-  }, [props.transferstate, props.uploadstate])
-
   // Handle data path input, mediated by preload.js
   async function choosePath (props) {
-    var dataPath = await window.electron.sendOpenDialog()
-    var key = 'path'
-    var value = dataPath[0]
-    setPathName({
-      ...pathName,
-      [key]: value})
+    var dataPath = await window.electron.selectdirectory()
+    if (dataPath.length == 0) {
+      console.log("Cancelled path selection.")
+    }
+    else {
+      var key = 'path'
+      var value = dataPath[0]
+      setPathName({
+        //...pathName,
+        [key]: value})
+    }
   }
 
   // Display file counts after selecting path
   function countFiles (ext) {
-    if (fileList === undefined || fileList.length === 0 || fileList[0].key === "") {
+    if (props.filelist === undefined || props.filelist.length === 0 || props.filelist[0].key === "") {
       return ""
     }
     else if (ext === 'total') {
-      return fileList.length
+      return props.filelist.length
     }
     else {
       var files = [];
-      for (var i = 0; i < fileList.length; i++) {
-        files.push(fileList[i].name);
+      for (var i = 0; i < props.filelist.length; i++) {
+        files.push(props.filelist[i].name);
       }
       const countlower = files.filter(file => file.endsWith(ext.toLowerCase())).length
       const countupper = files.filter(file => file.endsWith(ext.toUpperCase())).length
@@ -117,10 +87,9 @@ export default function Session (props) {
 
   // Populate file listing after selecting path
   async function populateTable () {
-    if (pathName.path !== "" ) {
-      await setTableLocale(localeOff)
+    if (pathName.path !== "") {
       await setTableLoading(true)
-      const files = await window.electron.listDirectory(pathName.path)
+      const files = await window.electron.listdirectory(pathName.path)
       const filesObjArray = []
       files.forEach((file, index) => {
         var entry = {}
@@ -128,10 +97,9 @@ export default function Session (props) {
         entry.name = file
         filesObjArray.push(entry)
       })
-      setFileList(filesObjArray)
+      props.setfilelist(filesObjArray)
     }
     await setTableLoading(false)
-    await setTableLocale(localeOn)
   }
 
   // Handle form completion
@@ -156,11 +124,13 @@ export default function Session (props) {
       description: formvals.description,
       dose: formvals.dose,
       exposuretime: formvals.exposuretime,
+      filecount: props.filelist.length,
       filter: formvals.filter,
       frames: formvals.frames,
       mag: formvals.mag,
       microscope: formvals.microscope,
       path: formvals.path,
+      storage: formvals.storage,
       timestamp: time,
       userid: AWS.config.credentials.identityId,
       voltage: formvals.voltage,
@@ -168,25 +138,9 @@ export default function Session (props) {
     props.setuitoggle(true) // Toggle the UI buttons and form
   }
 
-  async function transferMetaData(params) {
-    var status = await window.electron.transferData(params)
-    props.settransferstate(true) // This will trigger side effect to start file uploads
-  }
-
-  async function transferFile(params) {
-    props.setuploadstate(true) // Set state before start AWS transfer
-    var status = await window.electron.transferData(params)
-    props.settransfercount(props.transfercount + 1) // Increment counter to track file index
-    props.setuploadstate(false) // Set state after AWS transfer concludes
-  }
-
-  function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
   function stopTransfer () {
     props.settransferstate(false) // Set transfer state
-    props.settransfercount(0) // Reset transfer count
+    props.setuploadcount(0) // Reset transfer count
     props.setuitoggle(false)
   }
 
@@ -216,7 +170,7 @@ export default function Session (props) {
           >
             <Input disabled={props.uitoggle} value={pathName.path} onKeyDown={(e) => e.preventDefault()}
               addonAfter={
-                <span onClick={choosePath}>
+                <span onClick={props.uitoggle ? null : choosePath}>
                   <FolderAddOutlined />
                 </span>
               }
@@ -250,7 +204,7 @@ export default function Session (props) {
             <Input.TextArea disabled={props.uitoggle} placeholder="Optional sample details." autoSize={{minRows: 4, maxRows: 4}} allowClear={false} />
           </Form.Item>
 
-          <hr></hr>
+          <Divider />
 
           <Form.Item label="Camera" name="camera" valuePropName="value"
             rules={[
@@ -258,19 +212,19 @@ export default function Session (props) {
             ]}
           >
             <Select disabled={props.uitoggle}>
-              <Select.Option value="k3">K3</Select.Option>
-              <Select.Option value="k2">K2</Select.Option>
-              <Select.Option value="falcon4">Falcon IV</Select.Option>
-              <Select.Option value="falcon3">Falcon III</Select.Option>
-              <Select.Option value="falcon2">Falcon II</Select.Option>
-              <Select.Option value="falcon1">Falcon</Select.Option>
-              <Select.Option value="rio">Rio</Select.Option>
-              <Select.Option value="oneview">OneView</Select.Option>
-              <Select.Option value="de20">DE-20</Select.Option>
-              <Select.Option value="de16">DE-16</Select.Option>
-              <Select.Option value="de12">DE-12</Select.Option>
-              <Select.Option value="de10">DE-10</Select.Option>
-              <Select.Option value="other">Other</Select.Option>
+              <Select.Option value="K3">K3</Select.Option>
+              <Select.Option value="K2">K2</Select.Option>
+              <Select.Option value="Falcon 4">Falcon IV</Select.Option>
+              <Select.Option value="Falcon 3">Falcon III</Select.Option>
+              <Select.Option value="Falcon 2">Falcon II</Select.Option>
+              <Select.Option value="Falcon 1">Falcon</Select.Option>
+              <Select.Option value="Rio">Rio</Select.Option>
+              <Select.Option value="OneView">OneView</Select.Option>
+              <Select.Option value="DE-20">DE-20</Select.Option>
+              <Select.Option value="DE-16">DE-16</Select.Option>
+              <Select.Option value="DE-12">DE-12</Select.Option>
+              <Select.Option value="DE-10">DE-10</Select.Option>
+              <Select.Option value="Other">Other</Select.Option>
             </Select>
           </Form.Item>
 
@@ -280,14 +234,14 @@ export default function Session (props) {
             ]}
           >
             <Select disabled={props.uitoggle}>
-              <Select.Option value="krios">Krios</Select.Option>
-              <Select.Option value="arctica">Arctica</Select.Option>
-              <Select.Option value="glacios">Glacios</Select.Option>
-              <Select.Option value="f30">F30</Select.Option>
-              <Select.Option value="f20">F20</Select.Option>
-              <Select.Option value="polara">Polara</Select.Option>
-              <Select.Option value="cryoarm">CryoARM</Select.Option>
-              <Select.Option value="other">Other</Select.Option>
+              <Select.Option value="Krios">Krios</Select.Option>
+              <Select.Option value="Arctica">Arctica</Select.Option>
+              <Select.Option value="Glacios">Glacios</Select.Option>
+              <Select.Option value="F30">F30</Select.Option>
+              <Select.Option value="F20">F20</Select.Option>
+              <Select.Option value="Polara">Polara</Select.Option>
+              <Select.Option value="CryoARM">CryoARM</Select.Option>
+              <Select.Option value="Other">Other</Select.Option>
             </Select>
           </Form.Item>
 
@@ -336,7 +290,7 @@ export default function Session (props) {
             <Switch disabled={props.uitoggle}/>
           </Form.Item>
 
-          <hr></hr>
+          <Divider />
 
           <Form.Item label="Frames per Movie" name="frames" valuePropName="value"
             rules={[
@@ -365,7 +319,20 @@ export default function Session (props) {
             <InputNumber disabled={props.uitoggle} min={1} max={1000} step={0.01} />
           </Form.Item>
 
-          <hr></hr>
+          <Divider />
+
+          <Form.Item label="Storage Class" name="storage" valuePropName="value"
+            rules={[
+              {required: 'true', message: "Required field."},
+            ]}
+          >
+            <Select disabled={props.uitoggle}>
+              <Select.Option value="DEEP_ARCHIVE">AWS S3 DEEP_ARCHIVE</Select.Option>
+              <Select.Option value="STANDARD">AWS S3 STANDARD</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Divider />
 
           <Form.Item>
             <Button disabled={props.uitoggle} type="primary" htmlType="submit" >Start Session</Button>
@@ -380,15 +347,14 @@ export default function Session (props) {
         <Table
           id="sessioninfo"
           columns={tableColumns}
-          dataSource={fileList}
+          dataSource={props.filelist}
           size="small"
           scroll={scroll}
-          locale={tableLocale}
           loading={customLoading}
           pagination={false}
           />
           <div id="sessionfilecount">
-            Transfer count: {props.transfercount} <br></br>
+            Transfer count: {props.uploadcount} <br></br>
             TIF files: {countFiles('tif')} <br></br>
             TIFF files: {countFiles('tiff')} <br></br>
             MRC files: {countFiles('mrc')} <br></br>

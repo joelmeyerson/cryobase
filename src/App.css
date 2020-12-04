@@ -27,6 +27,9 @@
   }
 
 /* TABLE */
+.ant-table table {
+  font-size: 12px;
+}
 .ant-table-body {
   min-height: 400px;
 }

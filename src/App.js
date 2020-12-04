@@ -46,28 +46,130 @@ if (cognitoUser != null) {
 	});
 }
 
+{/*console.log("getting credentials...")
+AWS.config.credentials.refresh(function() {
+   console.log("Credentials obtained after login")
+});*/}
+
+
 function App() {
 
-  const [uiToggle, setUiToggle] = useState(false)
-  const [metaData, setMetaData] = useState({})
-  const [transferState, setTransferState] = useState(false);
-  const [uploadState, setUploadState] = useState(false);
-  const [transferCount, setTransferCount] = useState(0);
+  const [getArchive, setGetArchive] = useState(false) // Trigger when to fetch metadata for Archive componenet
+  const [archiveMeta, setArchiveMeta] = useState([]) // Store metadata to display in Archive table
+
+  //const [downloadState, setDownloadState] = useState(false); // Set whether AWS file upload active
+  //const [archiveMeta, setArchiveMeta] = useState([]) // Store metadata to display in Archive table
+
+
+  const [fileList, setFileList] = useState([]);   // Hold list of files for upload job
+  const [metaData, setMetaData] = useState({}) // Store metadata for upload job
+  const [transferState, setTransferState] = useState(false); // Set whether user has started upload job
+  const [uploadState, setUploadState] = useState(false); // Set whether AWS file upload active
+  const [uploadCount, setUploadCount] = useState(0); // Counter for file upload
+  const [uiToggle, setUiToggle] = useState(false) // Used to toggle UI after start and stop of upload
+
+  // Check that IdentityID has loaded
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     if (typeof(AWS.config.credentials.identityId) == 'undefined') {
+  //       console.log("refreshing")
+  //       AWS.config.credentials.refresh()
+  //     }
+  //     else {
+  //       console.log("IdentityID loaded:", AWS.config.credentials.identityId)
+  //     }
+  //   }, 1000);
+  //   return () => clearTimeout(timer);
+  // });
+
+  // Trigger fetch of archive metadata
+  useEffect(() => {
+    if (getArchive == true) {
+      fetchArchive(AWS.config.credentials.identityId) // Start transfer for the file
+    }
+  }, [getArchive])
+
+  // Handle meta data download to populate Archive table
+  async function fetchArchive(identityid) {
+    var archive = await window.electron.getmetadata(identityid)
+    var archiveObjArray = []
+    if (archive.length > 0) {
+      for (var i = 0; i <= archive.length-1; i++) {
+        archiveObjArray.push({
+          key: i+1,
+          ...archive[i]
+        })
+      }
+      localStorage.setItem('archive', JSON.stringify(archiveObjArray)); // Store a copy in local storage for caching
+      setArchiveMeta(archiveObjArray)
+    }
+    setGetArchive(false)
+  }
+
+  // Trigger metadata upload
+  useEffect(() => {
+    if (typeof(metaData.dataid) !== 'undefined') {
+      sendMetaData(metaData) // Start transfer for the file
+    }
+  }, [metaData])
+
+  // Trigger data upload
+  useEffect(() => {
+    if (transferState == true && uploadState == false && uploadCount < fileList.length) {
+      var transferparams = {
+        file: fileList[uploadCount].name,
+        dataid: metaData.dataid,
+        path: metaData.path,
+        userid: metaData.userid,
+        storage: metaData.storage
+      }
+      sendData(transferparams) // Start transfer for the file
+    }
+    else if (transferState == true && uploadCount == fileList.length) {
+      setTransferState(false)
+      setUiToggle(false)
+    }
+  }, [transferState, uploadState])
+
+  // Handle metadata upload
+  async function sendMetaData(params) {
+    var status = await window.electron.sendmetadata(params)
+    setTransferState(true) // This will trigger side effect to start file uploads
+  }
+
+  // Handle data upload
+  async function sendData(params) {
+    setUploadState(true) // Set state before start AWS transfer
+    var status = await window.electron.senddata(params)
+    setUploadCount(uploadCount + 1) // Increment counter to track file index
+    setUploadState(false) // Set state after AWS transfer concludes
+  }
+
+  // For testing
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
   return (
     <Switch>
       <Route path='/app' exact component={PublicLayout} />
       <Route path='/' render={(props) => (<ProtectedLayout
-        uitoggle={uiToggle}
-        setuitoggle={setUiToggle}
+        getarchive={getArchive}
+        setgetarchive={setGetArchive}
+        archivemeta={archiveMeta}
+        setarchivemeta={setArchiveMeta}
+        filelist={fileList}
+        setfilelist={setFileList}
         metadata={metaData}
         setmetadata={setMetaData}
         transferstate={transferState}
         settransferstate={setTransferState}
         uploadstate={uploadState}
         setuploadstate={setUploadState}
-        transfercount={transferCount}
-        settransfercount={setTransferCount}
+        uploadcount={uploadCount}
+        setuploadcount={setUploadCount}
+        uitoggle={uiToggle}
+        setuitoggle={setUiToggle}
       /> )} />
     </Switch>
   );
@@ -102,21 +204,28 @@ export const ProtectedLayout = (props) =>
       <Layout.Content>
         <Switch>
           <Route path="/archive">
-            <Archive />
+            <Archive
+              getarchive={props.getarchive}
+              setgetarchive={props.setgetarchive}
+              archivemeta={props.archivemeta}
+              setarchivemeta={props.setarchivemeta}
+            />
           </Route>
           <Route path={["/app", "/session"]}>
             <Session
               user={cognitoUser}
-              uitoggle={props.uitoggle}
-              setuitoggle={props.setuitoggle}
+              filelist={props.filelist}
+              setfilelist={props.setfilelist}
               metadata={props.metadata}
               setmetadata={props.setmetadata}
               transferstate={props.transferstate}
               settransferstate={props.settransferstate}
               uploadstate={props.uploadstate}
               setuploadstate={props.setuploadstate}
-              transfercount={props.transfercount}
-              settransfercount={props.settransfercount}
+              uploadcount={props.uploadcount}
+              setuploadcount={props.setuploadcount}
+              uitoggle={props.uitoggle}
+              setuitoggle={props.setuitoggle}
             />
           </Route>
           <Route path="/settings">
