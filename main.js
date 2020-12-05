@@ -78,6 +78,20 @@ ipcMain.handle('getmetadata', async (event, arg) => {
 // Download a dataset
 ipcMain.handle('getdata', async (event, arg) => {
 
+  // Parse key string for sub-directories, then check if sub-directory exists on disk
+  // Creat sub-dir if needed
+  // Download file
+
+  //var stream = s3.getObject({Bucket: 'apptestbucket10',Key: 'user/us-east-1:b843452a-276a-41be-87b8-2bd9013a54e0/test8-2020123-205936/file2.txt'}).createReadStream()
+  //var f = fs.createWriteStream('/Users/joel/Desktop/file1.txt');
+  //stream.pipe(f);
+  return null
+
+});
+
+// Restore a dataset in Deep Glacier
+ipcMain.handle('restoredata', async (event, arg) => {
+
   return null
 
 });

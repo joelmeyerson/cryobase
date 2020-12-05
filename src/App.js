@@ -11,8 +11,7 @@ import Cookies from 'js-cookie'
 import './App.css';
 import Archive from './Archive.js';
 import Session from './Session.js';
-import Settings from './Settings.js';
-import Login from './Login.js';
+import Configuration from './Configuration.js';
 
 // Import AWS
 import AWS from 'aws-sdk';
@@ -59,7 +58,6 @@ function App() {
 
   //const [downloadState, setDownloadState] = useState(false); // Set whether AWS file upload active
   //const [archiveMeta, setArchiveMeta] = useState([]) // Store metadata to display in Archive table
-
 
   const [fileList, setFileList] = useState([]);   // Hold list of files for upload job
   const [metaData, setMetaData] = useState({}) // Store metadata for upload job
@@ -145,6 +143,32 @@ function App() {
     setUploadState(false) // Set state after AWS transfer concludes
   }
 
+  // // Trigger data download
+  // useEffect(() => {
+  //   if (transferState == true && uploadState == false && uploadCount < fileList.length) {
+  //     var transferparams = {
+  //       file: fileList[uploadCount].name,
+  //       dataid: metaData.dataid,
+  //       path: metaData.path,
+  //       userid: metaData.userid,
+  //       storage: metaData.storage
+  //     }
+  //     sendData(transferparams) // Start transfer for the file
+  //   }
+  //   else if (transferState == true && uploadCount == fileList.length) {
+  //     setTransferState(false)
+  //     setUiToggle(false)
+  //   }
+  // }, [transferState, uploadState])
+  //
+  // // Handle data download
+  // async function sendData(params) {
+  //   setUploadState(true) // Set state before start AWS transfer
+  //   var status = await window.electron.senddata(params)
+  //   setUploadCount(uploadCount + 1) // Increment counter to track file index
+  //   setUploadState(false) // Set state after AWS transfer concludes
+  // }
+
   // For testing
   function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -179,9 +203,15 @@ function App() {
 export const PublicLayout = (props) =>
   <BrowserRouter>
     <Layout>
-      <Switch>
-        <Route path="/" component={Login} />
-      </Switch>
+      <Layout.Header>
+      </Layout.Header>
+      <Layout.Content>
+        <Switch>
+          <Route path="/" component={Configuration} />
+        </Switch>
+      </Layout.Content>
+      <Layout.Footer>
+      </Layout.Footer>
     </Layout>
   </BrowserRouter>
 
@@ -196,9 +226,6 @@ export const ProtectedLayout = (props) =>
         </Link>
         <Link to="/session" className="btn-manager" >
           <Button icon={<CloudUploadOutlined />}>Session Manager</Button>
-        </Link>
-        <Link to="/settings" className="btn-settings" >
-          <Button icon={<SettingOutlined />}>Settings</Button>
         </Link>
       </Layout.Header>
       <Layout.Content>
@@ -227,9 +254,6 @@ export const ProtectedLayout = (props) =>
               uitoggle={props.uitoggle}
               setuitoggle={props.setuitoggle}
             />
-          </Route>
-          <Route path="/settings">
-            <Settings />
           </Route>
         </Switch>
       </Layout.Content>

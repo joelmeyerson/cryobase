@@ -24,6 +24,11 @@ contextBridge.exposeInMainWorld(
       return status
     },
 
+    restoredata: async (selecteddata) => {
+      const restorestatus = await ipcRenderer.invoke('getmetadata', selecteddata)
+      return restorestatus
+    },
+
     sendmetadata: async (identityid) => {
       const status = await ipcRenderer.invoke('sendmetadata', identityid)
       return status

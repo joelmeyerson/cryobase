@@ -7,10 +7,11 @@ import {
   Select,
   DatePicker,
   InputNumber,
+  Popover,
   Switch,
   Table,
   Divider, } from 'antd';
-import { FolderAddOutlined, ContainerOutlined, LoadingOutlined, } from '@ant-design/icons';
+import { FolderAddOutlined, InfoCircleOutlined, LoadingOutlined, } from '@ant-design/icons';
 const AWS = require('aws-sdk');
 
 export default function Session (props) {
@@ -199,7 +200,7 @@ export default function Session (props) {
           <Form.Item label="Sample Information" name='description' valuePropName="value"
             rules={[
               {pattern: /^[a-zA-Z0-9\s,.]+$/, message: 'Letters, numbers, spaces, commas, and periods only.'},
-              {max: 100, message: 'Maximum 100 characters.'},
+              {max: 200, message: 'Maximum 200 characters.'},
             ]}>
             <Input.TextArea disabled={props.uitoggle} placeholder="Optional sample details." autoSize={{minRows: 4, maxRows: 4}} allowClear={false} />
           </Form.Item>
@@ -214,10 +215,10 @@ export default function Session (props) {
             <Select disabled={props.uitoggle}>
               <Select.Option value="K3">K3</Select.Option>
               <Select.Option value="K2">K2</Select.Option>
-              <Select.Option value="Falcon 4">Falcon IV</Select.Option>
-              <Select.Option value="Falcon 3">Falcon III</Select.Option>
-              <Select.Option value="Falcon 2">Falcon II</Select.Option>
-              <Select.Option value="Falcon 1">Falcon</Select.Option>
+              <Select.Option value="Falcon 4">Falcon 4</Select.Option>
+              <Select.Option value="Falcon 3">Falcon 3</Select.Option>
+              <Select.Option value="Falcon 2">Falcon 2</Select.Option>
+              <Select.Option value="Falcon 1">Falcon 1</Select.Option>
               <Select.Option value="Rio">Rio</Select.Option>
               <Select.Option value="OneView">OneView</Select.Option>
               <Select.Option value="DE-20">DE-20</Select.Option>
@@ -321,7 +322,22 @@ export default function Session (props) {
 
           <Divider />
 
-          <Form.Item label="Storage Class" name="storage" valuePropName="value"
+          <Form.Item
+            label={
+              <Popover
+                placement="topLeft"
+                content={
+                  <>
+                  <div>DEEP_ARCHIVE is low cost but requires a 12-48 hour retrieval step before data can be downloaded.</div>
+                  <div>STANDARD is higher cost but can be downloaded on-demand.</div>
+                  </>
+                }
+              >
+                <InfoCircleOutlined /> {"Storage Class"}
+              </Popover>
+            }
+            name="storage"
+            valuePropName="value"
             rules={[
               {required: 'true', message: "Required field."},
             ]}
@@ -352,7 +368,7 @@ export default function Session (props) {
           scroll={scroll}
           loading={customLoading}
           pagination={false}
-          />
+        />
           <div id="sessionfilecount">
             Transfer count: {props.uploadcount} <br></br>
             TIF files: {countFiles('tif')} <br></br>
