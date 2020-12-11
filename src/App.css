@@ -1,37 +1,9 @@
 /* node-style package resolution in CSS file */
-@import '~antd/dist/antd.css';
-
-/* LAYOUT */
-.ant-layout-header {
-  background: #4F61A1;
-  display: grid;
-  grid-template-columns: 200px 160px 160px 160px auto 120px 20px;
-  grid-gap: 1rem;
-}
-
-.ant-layout-footer {
-  background: #4F61A1;
-  display: grid;
-  grid-template-columns: 200px 160px 160px auto 40px 20px;
-  grid-gap: 1rem;
-}
-
-.ant-layout-content {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-
-/* FORM */
-.ant-form-item {
-  margin-bottom: 10px;
-  }
+@import "~antd/dist/antd.css";
 
 /* TABLE */
-.ant-table table {
-  font-size: 12px;
-}
 .ant-table-body {
-  min-height: 400px;
+  min-height: 300px;
 }
 
 .ant-table-thead > tr > th {
@@ -40,83 +12,11 @@
 }
 
 .ant-table-tbody > tr > td {
-  height: 5px;
-  padding: 4px;
+  height: 30px;
+  padding: 2px;
 }
 
-/* CARD */
-.ant-card-head {
-  min-height: 30px;
-  padding: 0px 0px;
-  border-bottom: solid 1px #E5E6EB;
-  padding: 0px;
-}
-
-.ant-card-head-title {
-  padding: 0px;
-}
-
-.ant-card {
-  display: grid;
-  margin: 10px;
-  padding: 5px;
-  background: #CCD2DB;
-  border-radius: 5px;
-}
-
-/* MODAL */
-body .ant-modal { /* Width */
-  display: grid;
-  max-width: 80%;
-  width: auto !important;
-}
-
-.ant-modal-header {
-  border-bottom-color: black;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-}
-
-/* BUTTON */
-.btn-data-archive {
-  grid-column-start: 2;
-  grid-row-start: 1;
-}
-
-.btn-manager {
-  grid-column-start: 3;
-  grid-row-start: 1;
-}
-
-.btn-jobs {
-  grid-column-start: 4;
-  grid-row-start: 1;
-}
-
-.btn-settings {
-  grid-column-start: 6;
-  grid-row-start: 1;
-}
-
-/* SESSION */
-#session .ant-card-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-gap: 1rem;
-}
-
-#sessionbuilder {
-  grid-column-start: 1;
-}
-
-#sessioninfo {
-  grid-column-start: 2;
-}
-
-#sessionfilecount {
-  grid-column-start: 2;
-  margin: 10px;
-  padding: 5px;
-  background: #CCD2DB;
-  border-radius: 5px;
+/* FORM */
+.ant-form-item {
+  margin-bottom: 5px;
 }

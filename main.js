@@ -81,18 +81,53 @@ function createWindow() {
 
   // Download a dataset
   ipcMain.handle("getdata", async (event, arg) => {
-    // Parse key string for sub-directories, then check if sub-directory exists on disk
-    // Creat sub-dir if needed
-    // Download file
+    var splitkey = arg.key.split("/");
+    var filename = splitkey[splitkey.length - 1];
 
-    //var stream = s3.getObject({Bucket: 'apptestbucket10',Key: 'user/us-east-1:b843452a-276a-41be-87b8-2bd9013a54e0/test8-2020123-205936/file2.txt'}).createReadStream()
-    //var f = fs.createWriteStream('/Users/joel/Desktop/file1.txt');
-    //stream.pipe(f);
+    // Check for sub-directories in key
+    var startpos = 3; // Start after "user" and "userid" and "dataid"
+    var endpos = splitkey.length - 1; // End on last element in array
+    var path = "";
+
+    for (var i = startpos; i <= endpos; i++) {
+      var pathelement = splitkey[i];
+      console.log(pathelement);
+      if (pathelement === filename) {
+        break;
+      } else if (!fs.existsSync(arg.downloadpath + "/" + path + pathelement)) {
+        console.log("dir created");
+        //console.log(arg.downloadpath + path + pathelement)
+        fs.mkdirSync(arg.downloadpath + "/" + path + pathelement);
+        path = path + pathelement + "/";
+        console.log(path)
+      } else {
+        path = path + pathelement + "/";
+          console.log(path);
+      }
+    }
+
+    var stream = await s3
+      .getObject({
+        Bucket: bucket,
+        Key: arg.key,
+      })
+      .createReadStream();
+
+    var writestream = await fs.createWriteStream(
+      arg.downloadpath + "/" + path + filename
+    ); // Create writestream
+    stream.pipe(writestream); // Write the file to stream
     return null;
   });
 
   // Handle restore of Glacier Deep Archive dataset, and handle status check on restore
   ipcMain.handle("restoredata", async (event, arg) => {
+    // Function return. Stores a notification to display to user.
+    var returnstatus = {
+      status: arg.status, // Return original status, or an updated status if needed
+      statusnotification: "",
+    };
+
     // Get list of all objects in target dataset
     var listparams = {
       Bucket: bucket,
@@ -113,7 +148,7 @@ function createWindow() {
           Bucket: bucket,
           Key: keylist[i],
           RestoreRequest: {
-            Days: 7, // Duration of restored data
+            Days: 3, // Duration of restored data
             GlacierJobParameters: {
               Tier: "Standard", // Sets the speed of recovery. "Bulk" is cheaper than "Standard"
             },
@@ -122,6 +157,9 @@ function createWindow() {
         await s3.restoreObject(restoreparams).promise(); // Start restoring the target key
       }
       await updateArchivemetaFile("restoring"); // Update status property of metadata JSON
+      returnstatus.status = "restoring";
+      returnstatus.statusnotification =
+        "Data is now being restored for download.";
     } else if (arg.status == "restoring") {
       var headerlist = []; // Get the restore status for each key in dataset
       var restorecomplete = true;
@@ -146,19 +184,72 @@ function createWindow() {
           break;
         } else if (header.Restore.includes("false")) {
           restorecount = restorecount + 1; // Keep count of keys that have been restored so far
-          //console.log(header.Restore.expiry-date);
         }
       }
       if (restorecomplete === true) {
         // If restore has finished then update "status" on dataset metadata
-        //await updateArchivemetaFile("restored"); // Update status property of metadata JSON
-        // need to return restorecomplete vs. total in keylist.length
-        console.log(restorecount)
+        await updateArchivemetaFile("restored"); // Update status property of metadata JSON
+        returnstatus.status = "restored";
+        returnstatus.statusnotification =
+          "Data has been restored and is available for dowload.";
+      } else if (restorecomplete === false) {
+        //var percentcomplete = Math.round(restorecount / keylist.length)
+        returnstatus.statusnotification =
+          "Data restoration is still in progress. Restoration will complete about 12 hours after the job was started.";
+      }
+    } else if (arg.status == "restored" || arg.status == "archiving") {
+
+      var headerlist = []; // Get the restore status for each key in dataset
+      var restoreintact = true;
+      var intactcount = 0;
+      for (var i = 0; i < keylist.length; i++) {
+        var headparams = {
+          Bucket: bucket,
+          Key: keylist[i],
+        };
+
+        var header = await s3.headObject(headparams).promise();
+
+        headerlist.push({
+          // Store each key and its restore status together
+          Key: keylist[i],
+          Restore: header.Restore,
+        });
+
+        // Example entry if key restore complete: Restore: 'ongoing-request="false", expiry-date="Fri, 31 Dec 1999 00:00:00 GMT"',
+        // Example entry if key sent back to archive: "undefined"
+        if (typeof(header.Restore) !== "defined") {
+          // If any instance of "undefined" found in the header then data is all or partially back in archive
+          restoreintact = false;
+        } else if (header.Restore.includes("false")) {
+          intactcount = intactcount + 1; // Keep count of keys that remain intact
+        }
+      }
+
+      if (restoreintact === true) {
+        // If restore is intact then just report back expiry date
+        var lastkeyheader = headerlist[headerlist.length - 1].Restore; // Gives the header for the final key in the list sent for restoration.
+        var expiretime = lastkeyheader.split(",")[2].replace('"', ""); // Split the string to get just the date/time stamp, and remove the final character
+        returnstatus.statusnotification =
+          "Restored data is currently available for download. Data will return to Archived status on or around " +
+          expiretime +
+          ".";
+      } else if (restoreintact === false && intactcount === 0) {
+        // If restore is entirely unavailable then switch data back to "archived" status on dataset metadata
+        await updateArchivemetaFile("archived"); // Update status property of metadata JSON
+        returnstatus.status = "archived";
+        returnstatus.statusnotification =
+          "Data has returned to Archived status.";
+      } else if (restoreintact === false && intactcount > 0) {
+        await updateArchivemetaFile("archiving"); // Update status property of metadata JSON
+        returnstatus.status = "archiving";
+        returnstatus.statusnotification =
+          "Data is in the process of returning to Archived status. When this process completes data can be restored again.";
       }
     }
 
-    // Function to download current metadata for dataset, update the "status" property, then upload the new metadata
     async function updateArchivemetaFile(newstatus) {
+      // Function to download current metadata for dataset, update the "status" property, then upload the new metadata
       //Download metadata for target dataset
       var downloadparams = {
         Bucket: bucket,
@@ -188,6 +279,8 @@ function createWindow() {
           return 0;
         });
     }
+    // Function returns notification to display to user.
+    return returnstatus;
   });
 
   // Handle path selection through file browser (call from preload.js)
@@ -309,6 +402,49 @@ function createWindow() {
         return 0;
       });
     return transferstatus;
+  });
+
+  // Count all keys matching input base key string
+  ipcMain.handle("countkeys", async (event, arg) => {
+    // Get list of all objects in target dataset
+    var listparams = {
+      Bucket: bucket,
+      Prefix: "user/" + arg.userid + "/" + arg.dataid,
+      MaxKeys: 1000000,
+    };
+
+    // Get array with objects, and each object holds Key (i.e. file path) and Restore status (status is undefined if Restore has not started)
+    var objectList = await s3.listObjectsV2(listparams).promise();
+    var keycount = objectList.Contents.filter((el) => !el.Key.includes("meta.json")); // Prevents counting of the json metadata file
+    var jsoncount = objectList.Contents.filter((el) => el.Key.includes("meta.json")); // Counts json
+
+    var notification = "";
+    jsoncount.length !== 0
+      ? (notification =
+          "Online storage contains " +
+          keycount.length +
+          " data files and the metadata file for this dataset.")
+      : (notification =
+          "Online storage contains " + keycount.length + " data files.");
+    return notification;
+  });
+
+  // List all keys matching input base key string
+  ipcMain.handle("listkeys", async (event, arg) => {
+    // Get list of all objects in target dataset
+    var listparams = {
+      Bucket: bucket,
+      Prefix: "user/" + arg.userid + "/" + arg.dataid,
+      MaxKeys: 1000000,
+    };
+
+    // Get array with objects, and each object holds Key (i.e. file path) and Restore status (status is undefined if Restore has not started)
+    var objectList = await s3.listObjectsV2(listparams).promise();
+    var keylist = [];
+    objectList.Contents.forEach((item, i) => {
+      keylist.push(item.Key);
+    });
+    return keylist;
   });
 
   // and load the index.html of the app.

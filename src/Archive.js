@@ -1,16 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { Card, Button, Input, Table, Radio, Popover, Divider } from "antd";
+import {
+  Card,
+  Button,
+  Input,
+  Table,
+  Radio,
+  Popover,
+  Divider,
+  Tag,
+  Row,
+  Col,
+} from "antd";
 import {
   InfoCircleOutlined,
   FileTextOutlined,
-  SwitcherTwoTone,
+  SwitcherOutlined,
   BorderOuterOutlined,
+  BorderlessTableOutlined,
+  WalletOutlined,
   ReloadOutlined,
-  FolderAddOutlined,
+  FolderOutlined,
   CloudDownloadOutlined,
   CheckCircleTwoTone,
   LoadingOutlined,
   FieldTimeOutlined,
+  HistoryOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 const AWS = require("aws-sdk");
 
@@ -24,12 +39,11 @@ export default function Archive(props) {
   });
   const [pathName, setPathName] = useState({ path: "" });
 
-  const data = props.archivemeta; // Store table data
   const columns = [
     {
       title: "Dataset",
       dataIndex: "dataset",
-      width: 80,
+      width: 180,
       sorter: {
         compare: (a, b) => a.dataset.localeCompare(b.dataset),
       },
@@ -39,13 +53,16 @@ export default function Archive(props) {
       title: "",
       dataIndex: "description",
       width: 40,
+      align: "center",
       render: function (text, record, index) {
         if (record.description !== "") {
           return (
-            <Popover content={record.description} title="Description">
-              <Button disabled="true" size="small">
-                {"D"}
-              </Button>
+            <Popover
+              content={record.description}
+              title="Description"
+              placement="right"
+            >
+              <Tag color="blue">D</Tag>
             </Popover>
           );
         }
@@ -54,14 +71,32 @@ export default function Archive(props) {
     {
       title: "Date",
       dataIndex: "date",
+      width: 80,
       sorter: {
         compare: (a, b) => new Date(a.date) - new Date(b.date),
       },
       showSorterTooltip: false,
     },
     {
+      dataIndex: "timestamp",
+      width: 40,
+      align: "center",
+      render: function (text, record, index) {
+        return (
+          <Popover
+            content={record.timestamp}
+            title="Upload Timestamp"
+            placement="right"
+          >
+            <Tag color="blue">TS</Tag>
+          </Popover>
+        );
+      },
+    },
+    {
       title: "Microscope",
       dataIndex: "microscope",
+      width: 110,
       sorter: {
         compare: (a, b) => a.microscope.localeCompare(b.microscope),
       },
@@ -70,22 +105,49 @@ export default function Archive(props) {
     {
       title: "Camera",
       dataIndex: "camera",
+      width: 90,
       sorter: {
         compare: (a, b) => a.camera.localeCompare(b.camera),
       },
       showSorterTooltip: false,
     },
     {
-      title: "File Count",
+      title: "Dataset File Count",
       dataIndex: "filecount",
+      width: 150,
       sorter: {
         compare: (a, b) => a.filecount - b.filecount,
       },
       showSorterTooltip: false,
     },
     {
+      width: 30,
+      render: function (text, record, index) {
+        return (
+          <Popover
+            content={
+              "Select row and click button to verify the number of files successfully uploaded."
+            }
+            placement="left"
+          >
+            <Button
+              disabled={selectedData.dataid !== record.dataid}
+              onClick={countKeys}
+              type="primary"
+              block
+              loading={false}
+              size="small"
+            >
+              #
+            </Button>
+          </Popover>
+        );
+      },
+    },
+    {
       title: "Storage Class",
       dataIndex: "storage",
+      width: 130,
       sorter: {
         compare: (a, b) => a.storage.localeCompare(b.storage),
       },
@@ -94,29 +156,60 @@ export default function Archive(props) {
     {
       title: "Data Status",
       dataIndex: "status",
+      width: 90,
       showSorterTooltip: false,
       render: function (text, record, index) {
-        if (record.status == "archived") {
+        if (
+          record.status == "archived" &&
+          record.dataid == props.metadata.dataid
+        ) {
           return (
-            <Popover content={"Select row and click to restore data."}>
+            <Popover content={"Data is uploading."} placement="left">
+              <span>
+                <LoadingOutlined /> Uploading
+              </span>
+            </Popover>
+          );
+        } else if (record.status == "archived") {
+          return (
+            <Popover
+              content={"Select row and click button to restore data."}
+              placement="left"
+            >
               <Button
                 disabled={selectedData.dataid !== record.dataid}
                 onClick={restoreDataset}
+                type="primary"
+                block
+                loading={
+                  props.buttonloading && selectedData.dataid === record.dataid
+                }
                 size="small"
-                icon={<SwitcherTwoTone />}
+                icon={<WalletOutlined />}
               >
-                {"Restore"}
+                {"Archived"}
               </Button>
             </Popover>
           );
         } else if (record.status == "restoring") {
           return (
-            <Popover content={"Select row and click to check status of data restoration."}>
+            <Popover
+              content={
+                "Select row and click button to check status of data restoration."
+              }
+              placement="left"
+            >
               <Button
+              className={"status-btn"}
                 disabled={selectedData.dataid !== record.dataid}
                 onClick={restoreDataset}
+                type="primary"
+                block
+                loading={
+                  props.buttonloading && selectedData.dataid === record.dataid
+                }
                 size="small"
-                icon={<BorderOuterOutlined />}
+                icon={<FieldTimeOutlined />}
               >
                 {"Restoring"}
               </Button>
@@ -124,18 +217,84 @@ export default function Archive(props) {
           );
         } else if (record.status == "restored") {
           return (
-            <Popover content={"Restored data will expire on or around XXX."}>
-              <span>
-                <FieldTimeOutlined /> Restored
-              </span>
+            <Popover
+              content={
+                "Restored data will expire 7 days after restoration. Select row and click to see if data is still available for download."
+              }
+              placement="left"
+            >
+              <Button
+              className={"status-btn"}
+                disabled={selectedData.dataid !== record.dataid}
+                onClick={restoreDataset}
+                type="primary"
+                block
+                loading={
+                  props.buttonloading && selectedData.dataid === record.dataid
+                }
+                size="small"
+                icon={<SwitcherOutlined />}
+              >
+                {"Restored"}
+              </Button>
+            </Popover>
+          );
+        } else if (record.status == "archiving") {
+          return (
+            <Popover
+              content={
+                "Data is in the process of returning to Archived status and is not available."
+              }
+              placement="left"
+            >
+              <Button
+              className={"status-btn"}
+                disabled={selectedData.dataid !== record.dataid}
+                onClick={restoreDataset}
+                type="primary"
+                block
+                loading={
+                  props.buttonloading && selectedData.dataid === record.dataid
+                }
+                size="small"
+                icon={<HistoryOutlined />}
+              >
+                {"Archiving"}
+              </Button>
+            </Popover>
+          );
+        } else if (record.status == "standard") {
+          return (
+            <Popover
+              content={"Data is available for download."}
+              placement="left"
+            >
+              <Button
+              className={"status-btn"}
+                type="text"
+                block
+                size="small"
+                icon={<CheckCircleTwoTone twoToneColor="#52c41a" />}
+              >
+                {"Available"}
+              </Button>
             </Popover>
           );
         } else {
           return (
-            <Popover content={"Data is available for download."}>
-              <span>
-                <CheckCircleTwoTone twoToneColor="#52c41a" /> Available
-              </span>
+            <Popover
+              content={"Error: Data status is undefined."}
+              placement="left"
+            >
+            <Button
+            className={"status-btn"}
+              type="text"
+              block
+              size="small"
+              icon={<CloseCircleOutlined />}
+              >
+              {"Undefined"}
+              </Button>
             </Popover>
           );
         }
@@ -157,6 +316,7 @@ export default function Archive(props) {
     // rowSelection object indicates the need for row selection
     onChange: (selectedRowKeys, selectedRows) => {
       var rowKey = selectedRowKeys[0];
+      var data = props.archivemeta;
       setSelectedData({
         dataid: data[rowKey - 1].dataid,
         status: data[rowKey - 1].status,
@@ -175,7 +335,6 @@ export default function Archive(props) {
   async function loadArchive() {
     // If cahced version of archive exists then load it
     if (localStorage.hasOwnProperty("archive") === true) {
-      console.log("Cached archive found");
       var cachedarchive = JSON.parse(localStorage.getItem("archive"));
       props.setarchivemeta(cachedarchive);
     } else {
@@ -186,32 +345,34 @@ export default function Archive(props) {
 
   // Manually re-fetch archive
   async function reloadArchive() {
-    props.setgetarchive(true);
+    await props.setgetarchive(true);
   }
 
   // Start restore or check restore status for Deep Glacier data
   async function restoreDataset() {
+    await props.setbuttonloading(true);
     var restorestatus = await window.electron.restoredata(selectedData);
-    reloadArchive(); // Download updated versions of metadata in archivemeta
+    restorestatus.statusnotification !== ""
+      ? props.opennotification(restorestatus.statusnotification)
+      : console.log("no notification");
+    await props.setbuttonloading(false);
+    await reloadArchive(); // Download updated versions of metadata in archivemeta
+    setSelectedData({
+      dataid: selectedData.dataid,
+      status: restorestatus.status, // Refresh row selection to get fresh "status" value
+      storage: selectedData.storage,
+      userid: selectedData.userid,
+    });
   }
 
-  // Handle data path input, mediated by preload.js
-  async function choosePath(props) {
-    var dataPath = await window.electron.selectdirectory();
-    if (dataPath.length == 0) {
-      console.log("Cancelled path selection.");
-    } else {
-      var key = "path";
-      var value = dataPath[0];
-      setPathName({
-        //...pathName,
-        [key]: value,
-      });
-    }
+  // Return a count of keys for a given dataset
+  async function countKeys() {
+    var keycountnotification = await window.electron.countkeys(selectedData);
+    props.opennotification(keycountnotification);
   }
 
   // Handle download path selection, mediated by preload.js
-  async function choosePath(props) {
+  async function choosePath() {
     var dataPath = await window.electron.selectdirectory();
     if (dataPath.length === 0) {
       console.log("Cancelled path selection.");
@@ -226,68 +387,87 @@ export default function Archive(props) {
   }
 
   // Download dataset
-  async function downloadData() {
-    console.log("test");
-    //Pass metadata and download path into a state variable
+  async function downloadData(params) {
+    var keylist = await window.electron.listkeys(params);
+    props.setdownloadlist(keylist);
+    props.setdownloadparams(params);
+    props.setdownloadstate(true);
   }
 
   return (
-    <Card title="Data Archive" bordered={true}>
-      <Button onClick={reloadArchive} icon={<ReloadOutlined />} shape="round">
-        Refresh
-      </Button>
-      <Divider />
-      <Table
-        loading={customLoading} // Table is loading if fetch archive is triggered
-        bordered={true}
-        rowSelection={{
-          type: "radio",
-          ...rowSelection,
-        }}
-        pagination={false}
-        columns={columns}
-        dataSource={data}
-        scroll={{
-          y: 500,
-          x: "max-content",
-        }}
-      />
-      <Divider />
-      <Input
-        disabled={false}
-        value={pathName.path}
-        addonBefore={"Local Download Path"}
-        onKeyDown={(e) => e.preventDefault()}
-        addonAfter={
-          <span onClick={choosePath}>
-            <FolderAddOutlined />
-          </span>
-        }
-      />
-      <Divider />
-      <Popover
-        placement="topLeft"
-        content={
-          "Select row and local download path before starting download."
-        }
-      >
-        <InfoCircleOutlined /> {"   "}
-      </Popover>
-      <Button
-        disabled={selectedData !== "" || pathName.path === ""}
-        type="primary"
-        onClick={downloadData}
-        icon={<CloudDownloadOutlined />}
-      >
-        Start Download
-      </Button>
-      <Button
-        disabled={true}
-        type="primary"
-        onClick={console.log("test")}
-      >
-        Stop Download
-      </Button>
+    <Card size="small" title="Data Archive" bordered={true}>
+      <Row gutter={[16, 16]}>
+        <Col>
+          <Button
+            onClick={reloadArchive}
+            block
+            icon={<ReloadOutlined />}
+            shape="round"
+          >
+            Refresh
+          </Button>
+        </Col>
+      </Row>
+      <Row gutter={[16, 16]}>
+        <Col>
+          <Table
+            loading={customLoading} // Table is loading if fetch archive is triggered
+            bordered={true}
+            footer={() => ""}
+            rowSelection={{
+              type: "radio",
+              ...rowSelection,
+            }}
+            pagination={false}
+            columns={columns}
+            dataSource={props.archivemeta}
+            scroll={{
+              y: 100,
+              x: "max-content",
+            }}
+          />
+        </Col>
+      </Row>
+      <Row gutter={[16, 16]}>
+        <Col span={12}>
+          <Input
+            disabled={false}
+            value={pathName.path}
+            addonBefore={"Local Download Path"}
+            onKeyDown={(e) => e.preventDefault()}
+            addonAfter={
+              <span onClick={choosePath}>
+                <FolderOutlined />
+              </span>
+            }
+          />
+        </Col>
+        <Col span={6}></Col>
+        <Col span={6}>
+          <Popover
+            placement="left"
+            content={
+              "Select row and local download path before starting download."
+            }
+          >
+            <Button
+              disabled={selectedData.dataid === "" || pathName.path === ""}
+              type="primary"
+              block
+              onClick={() => {
+                downloadData({
+                  userid: selectedData.userid,
+                  dataid: selectedData.dataid,
+                  localpath: pathName.path,
+                });
+              }}
+              icon={<CloudDownloadOutlined />}
+            >
+              Start Download
+            </Button>
+          </Popover>
+        </Col>
+      </Row>
     </Card>
   );
 }

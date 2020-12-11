@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Button } from "antd";
+import { Layout, Button, Row, Col, notification } from "antd";
 import {
   HddOutlined,
   CloudUploadOutlined,
   SettingOutlined,
+  FlagOutlined,
 } from "@ant-design/icons";
 import { BrowserRouter, Route, Switch, Link } from "react-router-dom";
 import Cookies from "js-cookie";
 import "./App.css";
 import Archive from "./Archive.js";
-import Session from "./Session.js";
+import Upload from "./Upload.js";
 import Configuration from "./Configuration.js";
 
 // Import AWS
@@ -59,19 +60,43 @@ AWS.config.credentials.refresh(function() {
 });*/
 }
 
+// Antd notification system
+async function openNotification(notificationText) {
+  notification.open({
+    message: notificationText,
+    description: "",
+    placement: "topRight",
+    className: "custom-class",
+    icon: <FlagOutlined />,
+    duration: 8,
+    style: {
+      width: 800,
+    },
+  });
+}
+
 function App() {
   const [getArchive, setGetArchive] = useState(false); // Trigger when to fetch metadata for Archive componenet
   const [archiveMeta, setArchiveMeta] = useState([]); // Store metadata to display in Archive table
+  const [buttonLoading, setButtonLoading] = useState(false); // Toggle button loading
 
-  //const [downloadState, setDownloadState] = useState(false); // Set whether AWS file upload active
-  //const [archiveMeta, setArchiveMeta] = useState([]) // Store metadata to display in Archive table
+  const [downloadState, setDownloadState] = useState(false); // Set whether AWS file upload active
+  const [downloadConnect, setDownloadConnect] = useState(false); // Set whether AWS file download active
+  const [downloadParams, setDownloadParams] = useState({}); // Store metadata to display in Archive table
+  const [downloadCount, setDownloadCount] = useState(0); // Counter for file upload
+  const [downloadList, setDownloadList] = useState([]); // Hold list of files for upload job
 
+  const [uploadPathName, setUploadPathName] = useState({ path: "" });
+  const [uploadTableLoading, setUploadTableLoading] = useState(false);
   const [fileList, setFileList] = useState([]); // Hold list of files for upload job
   const [metaData, setMetaData] = useState({}); // Store metadata for upload job
+  const [currentDataID, setCurrentDataID] = useState({ dataid: "" }); // Set whether user has started upload job
   const [transferState, setTransferState] = useState(false); // Set whether user has started upload job
   const [uploadState, setUploadState] = useState(false); // Set whether AWS file upload active
   const [uploadCount, setUploadCount] = useState(0); // Counter for file upload
   const [uiToggle, setUiToggle] = useState(false); // Used to toggle UI after start and stop of upload
+
+  const [pageState, setPageState] = useState(0); // Track which page is loaded
 
   // Check that IdentityID has loaded
   // useEffect(() => {
@@ -136,8 +161,32 @@ function App() {
     } else if (transferState == true && uploadCount == fileList.length) {
       setTransferState(false);
       setUiToggle(false);
+      setMetaData({}); // Clear current metadata
     }
   }, [transferState, uploadState]);
+
+  // Trigger data download
+  useEffect(() => {
+    if (
+      downloadState == true &&
+      downloadConnect == false &&
+      downloadCount < downloadList.length
+    ) {
+      var params = {
+        key: downloadList[downloadCount],
+        dataid: downloadParams.dataid,
+        downloadpath: downloadParams.localpath,
+        userid: downloadParams.userid,
+      };
+
+      getData(params); // Start transfer for the file
+    } else if (downloadState == true && downloadCount == downloadList.length) {
+      setDownloadState(false);
+      setDownloadList([]); // Clear current list
+      setDownloadParams({});
+      setDownloadCount(0);
+    }
+  }, [downloadState, downloadConnect]);
 
   // Handle metadata upload
   async function sendMetaData(params) {
@@ -153,38 +202,12 @@ function App() {
     setUploadState(false); // Set state after AWS transfer concludes
   }
 
-  // // Trigger data download
-
-  // Very important to check if data is restored. If so, data may be partially put back in Glacier archive. So, need to run check to make sure it fully available for download
-
-  // useEffect(() => {
-  //   if (transferState == true && uploadState == false && uploadCount < fileList.length) {
-  //     var transferparams = {
-  //       file: fileList[uploadCount].name,
-  //       dataid: metaData.dataid,
-  //       path: metaData.path,
-  //       userid: metaData.userid,
-  //       storage: metaData.storage
-  //     }
-  //     sendData(transferparams) // Start transfer for the file
-  //   }
-  //   else if (transferState == true && uploadCount == fileList.length) {
-  //     setTransferState(false)
-  //     setUiToggle(false)
-  //   }
-  // }, [transferState, uploadState])
-  //
-  // // Handle data download
-  // async function sendData(params) {
-  //   setUploadState(true) // Set state before start AWS transfer
-  //   var status = await window.electron.senddata(params)
-  //   setUploadCount(uploadCount + 1) // Increment counter to track file index
-  //   setUploadState(false) // Set state after AWS transfer concludes
-  // }
-
-  // For testing
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  // Handle data download
+  async function getData(params) {
+    setDownloadConnect(true); // Set state before start AWS transfer
+    var status = await window.electron.getdata(params);
+    setDownloadCount(downloadCount + 1); // Increment counter to track file index
+    setDownloadConnect(false); // Set state after AWS transfer concludes
   }
 
   return (
@@ -194,10 +217,27 @@ function App() {
         path="/"
         render={(props) => (
           <ProtectedLayout
+            opennotification={openNotification}
             getarchive={getArchive}
             setgetarchive={setGetArchive}
             archivemeta={archiveMeta}
             setarchivemeta={setArchiveMeta}
+            buttonloading={buttonLoading}
+            setbuttonloading={setButtonLoading}
+            downloadstate={downloadState}
+            setdownloadstate={setDownloadState}
+            downloadconnect={downloadConnect}
+            setdownloadconnect={setDownloadConnect}
+            downloadparams={downloadParams}
+            setdownloadparams={setDownloadParams}
+            downloadcount={downloadCount}
+            setdownloadcount={setDownloadCount}
+            downloadlist={downloadList}
+            setdownloadlist={setDownloadList}
+            uploadpathname={uploadPathName}
+            setuploadpathname={setUploadPathName}
+            uploadtableloading={uploadTableLoading}
+            setuploadtableloading={setUploadTableLoading}
             filelist={fileList}
             setfilelist={setFileList}
             metadata={metaData}
@@ -210,6 +250,8 @@ function App() {
             setuploadcount={setUploadCount}
             uitoggle={uiToggle}
             setuitoggle={setUiToggle}
+            pagestate={pageState}
+            setpagestate={setPageState}
           />
         )}
       />
@@ -237,27 +279,71 @@ export const ProtectedLayout = (props) => (
   <BrowserRouter>
     <Layout>
       <Layout.Header>
-        <AmplifySignOut />
-        <Link to="/archive" className="btn-data-archive">
-          <Button icon={<HddOutlined />}>Data Archive</Button>
-        </Link>
-        <Link to="/session" className="btn-manager">
-          <Button icon={<CloudUploadOutlined />}>Session Manager</Button>
-        </Link>
+        <Row justify="center" align="top" gutter={18}>
+          <Col span={4}></Col>
+          <Col span={4}>
+            <Link to="/archive">
+              <Button
+                type={props.pagestate === 1 ? "primary" : "default"}
+                block
+                shape="round"
+                icon={<HddOutlined />}
+                onClick={()=> {props.setpagestate(1)}}
+              >
+                Data Archive
+              </Button>
+            </Link>
+          </Col>
+          <Col span={4}>
+            <Link to="/upload">
+              <Button
+                type={props.pagestate === 2 ? "primary" : "default"}
+                block
+                shape="round"
+                icon={<CloudUploadOutlined />}
+                onClick={()=> {props.setpagestate(2)}}
+              >
+                Upload Data
+              </Button>
+            </Link>
+          </Col>
+          <Col span={8}></Col>
+          <Col span={4}>
+            <AmplifySignOut />
+          </Col>
+        </Row>
       </Layout.Header>
       <Layout.Content>
         <Switch>
           <Route path="/archive">
             <Archive
+              opennotification={props.opennotification}
               getarchive={props.getarchive}
               setgetarchive={props.setgetarchive}
               archivemeta={props.archivemeta}
               setarchivemeta={props.setarchivemeta}
+              buttonloading={props.buttonloading}
+              setbuttonloading={props.setbuttonloading}
+              downloadstate={props.downloadState}
+              setdownloadstate={props.setdownloadstate}
+              downloadconnect={props.downloadconnect}
+              setdownloadconnect={props.setdownloadconnect}
+              downloadparams={props.downloadparams}
+              setdownloadparams={props.setdownloadparams}
+              downloadcount={props.downloadcount}
+              setdownloadcount={props.setdownloadcount}
+              downloadlist={props.downloadlist}
+              setdownloadlist={props.setdownloadlist}
+              metadata={props.metadata}
             />
           </Route>
-          <Route path={["/app", "/session"]}>
-            <Session
+          <Route path={["/app", "/upload"]}>
+            <Upload
               user={cognitoUser}
+              uploadpathname={props.uploadpathname}
+              setuploadpathname={props.setuploadpathname}
+              uploadtableloading={props.uploadtableloading}
+              setuploadtableloading={props.setuploadtableloading}
               filelist={props.filelist}
               setfilelist={props.setfilelist}
               metadata={props.metadata}
@@ -280,4 +366,4 @@ export const ProtectedLayout = (props) => (
 );
 
 export default withAuthenticator(App);
-//export default App
+//export default App;
