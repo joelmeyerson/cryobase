@@ -1,0 +1,45 @@
+Check user permissions for writing to bucket
+
+Check authentication time-out
+
+Handle errors (Electron crash reporting; error catchers; React error boundaries; AWS tracing service; Inform user that something has gone wrong)
+
+Handle settings metadata back to "archived" when "restored" is over.
+
+Need notification and/or spinner to show that upload has started
+
+Check if update metadata list, will archive table still display properly (i.e. if a field is missing from an old metadata, will it will show up as expected)
+
+To handle whether restored data is still available: when user clicks download button, do a quick check to see if data is available. If it is not available post notification that has expired, and update buttons status.
+
+Check to make sure that data is Available or Restored before download. Need to refresh status to check if it is restored
+
+Button: download selected row or something like that, or Download dataset
+
+Make sure feedback so user doesn’t think to download Restoring
+
+STANDARD class does not show upload progress in table view
+
+Center the “Uploading” status indicator
+
+Archived popover should tell user that clicking will start recovery
+
+Recovery fails if archive is not
+
+Add “validated” field to metadata
+
+Do auto reload when page loads
+
+Reload should refresh entire table
+
+Customize AWS login
+
+Add stop download button
+
+Add progress to download
+
+Fix time stamp
+
+Create new prototype with user login page for AWS info and bucket
+
+Add icon to Electron app
