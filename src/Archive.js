@@ -35,7 +35,7 @@ export default function Archive(props) {
     dataid: "",
     status: "",
     storage: "",
-    userid: AWS.config.credentials.identityId,
+    userid: AWS.config.accessKeyId,
   });
   const [pathName, setPathName] = useState({ path: "" });
 

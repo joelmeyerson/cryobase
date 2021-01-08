@@ -25,7 +25,7 @@ import {
 } from "@ant-design/icons";
 const AWS = require("aws-sdk");
 
-export default function Session(props) {
+export default function Upload(props) {
   const [form] = Form.useForm(); // Create ANTD form
 
   // Table set up
@@ -59,6 +59,12 @@ export default function Session(props) {
     populateTable();
   }, [props.uploadpathname]);
 
+  // useEffect(() => {
+  //   if (props.uploadstate === false) {
+  //     endTransfer();
+  //   }
+  // }, [props.uploadstate]);
+
   // Handle data path input, mediated by preload.js
   async function choosePath() {
     var dataPath = await window.electron.selectdirectory();
@@ -68,8 +74,7 @@ export default function Session(props) {
       var key = "path";
       var value = dataPath[0];
       props.setuploadpathname({
-        //...pathName,
-        [key]: value,
+        [key]: value
       });
     }
   }
@@ -141,6 +146,7 @@ export default function Session(props) {
       dose: formvals.dose,
       exposuretime: formvals.exposuretime,
       filecount: props.filelist.length,
+      fileuploadcount: 0,
       filter: formvals.filter,
       frames: formvals.frames,
       mag: formvals.mag,
@@ -149,18 +155,24 @@ export default function Session(props) {
       status: formvals.storage == "STANDARD" ? "standard" : "archived",
       storage: formvals.storage,
       timestamp: time,
-      userid: AWS.config.credentials.identityId,
       voltage: formvals.voltage,
     });
+    props.setuploadstate(true)
     props.setuitoggle(true); // Toggle the UI buttons and form
   }
 
-  async function stopTransfer() {
-    props.settransferstate(false); // Set transfer state
-    props.setuploadcount(0); // Reset transfer count
-    props.setmetadata({}); // Clear current metadata
-    props.setuitoggle(false);
+  async function stopUpload() {
+    //props.setuploadstate(false)
   }
+  // async function endTransfer() {
+  //   form.resetFields(); // Clear form
+  //   props.setuploadcount(0); // Reset transfer count
+  //   props.setmetadata({}); // Clear current metadata
+  //   props.setuitoggle(false); // Toggle UI
+  //   props.setuploadpathname({
+  //     ["path"]: "",
+  //   });
+  // }
 
   return (
     <Card size="small" id="session" title="Upload Data" bordered={true}>
@@ -472,7 +484,7 @@ export default function Session(props) {
                     disabled={!props.uitoggle}
                     type="danger"
                     icon={<StopOutlined />}
-                    onClick={stopTransfer}
+                    onClick={stopUpload()}
                   >
                     Stop Upload
                   </Button>
@@ -512,7 +524,6 @@ export default function Session(props) {
           <Col span={12}>
           <Card size="small" id="session" title="File Counts" bordered={true}>
 
-
             Transfer count: {props.uploadcount} <br></br>
             TIF files: {countFiles("tif")} <br></br>
             TIFF files: {countFiles("tiff")} <br></br>
@@ -526,10 +537,10 @@ export default function Session(props) {
           <Col span={12}>
           <Card size="small" id="session" title="Transfer Status" bordered={true}>
           <Progress
-          type="circle"
-            percent={Math.round(
-              100 * (props.uploadcount / props.filelist.length)
-            )}
+          type="line"
+          percent={props.uploadstate === false ? 0 : Math.round(
+            100 * (props.uploadcount / props.filelist.length)
+          )}
           />
           </Card>
           </Col>

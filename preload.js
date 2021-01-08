@@ -12,8 +12,13 @@ contextBridge.exposeInMainWorld("electron", {
     return fileList;
   },
 
-  getmetadata: async (identityid) => {
-    const archivemeta = await ipcRenderer.invoke("getmetadata", identityid);
+  senddata: async (sessiondata) => {
+    const status = await ipcRenderer.invoke("senddata", sessiondata);
+    return status;
+  },
+
+  getmetadata: async () => {
+    const archivemeta = await ipcRenderer.invoke("getmetadata");
     return archivemeta;
   },
 
@@ -29,11 +34,6 @@ contextBridge.exposeInMainWorld("electron", {
 
   sendmetadata: async (identityid) => {
     const status = await ipcRenderer.invoke("sendmetadata", identityid);
-    return status;
-  },
-
-  senddata: async (sessiondata) => {
-    const status = await ipcRenderer.invoke("senddata", sessiondata);
     return status;
   },
 
