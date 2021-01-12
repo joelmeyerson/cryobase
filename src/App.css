@@ -1,9 +1,33 @@
 /* node-style package resolution in CSS file */
 @import "~antd/dist/antd.css";
 
+/* HEADER */
+header.ant-layout-header {
+background: #DCDCDC;
+}
+
+/* FOOTER */
+footer.ant-layout-footer {
+position: sticky;
+bottom: 0;
+height: 64px;
+background: #DCDCDC;
+}
+
+/* CARD */
+
+div.header-div {
+  font-size: 10;
+}
+
+.archive-card .upload-card {
+  padding: 5px;
+  height: calc(100vh - 50px);
+}
+
 /* TABLE */
 .ant-table-body {
-  min-height: 300px;
+  min-height: 380px;
 }
 
 .ant-table-thead > tr > th {

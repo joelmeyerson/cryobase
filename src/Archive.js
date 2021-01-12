@@ -26,6 +26,7 @@ import {
   FieldTimeOutlined,
   HistoryOutlined,
   CloseCircleOutlined,
+  WarningTwoTone,
 } from "@ant-design/icons";
 const AWS = require("aws-sdk");
 
@@ -35,7 +36,6 @@ export default function Archive(props) {
     dataid: "",
     status: "",
     storage: "",
-    userid: AWS.config.accessKeyId,
   });
   const [pathName, setPathName] = useState({ path: "" });
 
@@ -43,7 +43,7 @@ export default function Archive(props) {
     {
       title: "Dataset",
       dataIndex: "dataset",
-      width: 180,
+      width: 140,
       sorter: {
         compare: (a, b) => a.dataset.localeCompare(b.dataset),
       },
@@ -52,7 +52,7 @@ export default function Archive(props) {
     {
       title: "",
       dataIndex: "description",
-      width: 40,
+      width: 30,
       align: "center",
       render: function (text, record, index) {
         if (record.description !== "") {
@@ -79,7 +79,7 @@ export default function Archive(props) {
     },
     {
       dataIndex: "timestamp",
-      width: 40,
+      width: 30,
       align: "center",
       render: function (text, record, index) {
         return (
@@ -96,7 +96,7 @@ export default function Archive(props) {
     {
       title: "Microscope",
       dataIndex: "microscope",
-      width: 110,
+      width: 90,
       sorter: {
         compare: (a, b) => a.microscope.localeCompare(b.microscope),
       },
@@ -105,49 +105,63 @@ export default function Archive(props) {
     {
       title: "Camera",
       dataIndex: "camera",
-      width: 90,
+      width: 70,
       sorter: {
         compare: (a, b) => a.camera.localeCompare(b.camera),
       },
       showSorterTooltip: false,
     },
     {
-      title: "Dataset File Count",
+      dataIndex: "uploadcompleted",
+      width: 20,
+      showSorterTooltip: false,
+      align: "center",
+      render: function (text, record, index) {
+        if (record.dataid == props.metadata.dataid) {
+          return (
+            <span>
+              {" "}
+            </span>
+          )
+        }
+        else if (record.uploadcompleted == false) {
+          return (
+            <Popover
+              content={"Warning: Dataset upload was incomplete."}
+              placement="left"
+            >
+              <span>
+                <WarningTwoTone />
+              </span>
+            </Popover>
+          );
+        } else if (record.uploadcompleted == true) {
+          return (
+            <Popover
+              content={"Dataset upload was completed successfully."}
+              placement="left"
+            >
+              <span>
+                <CheckCircleTwoTone />
+              </span>
+            </Popover>
+          );
+        }
+      },
+    },
+    {
+      title: "Dataset Size",
       dataIndex: "filecount",
-      width: 150,
+      width: 110,
       sorter: {
         compare: (a, b) => a.filecount - b.filecount,
       },
       showSorterTooltip: false,
     },
     {
-      width: 30,
-      render: function (text, record, index) {
-        return (
-          <Popover
-            content={
-              "Select row and click button to verify the number of files successfully uploaded."
-            }
-            placement="left"
-          >
-            <Button
-              disabled={selectedData.dataid !== record.dataid}
-              onClick={countKeys}
-              type="primary"
-              block
-              loading={false}
-              size="small"
-            >
-              #
-            </Button>
-          </Popover>
-        );
-      },
-    },
-    {
       title: "Storage Class",
       dataIndex: "storage",
-      width: 130,
+      width: 110,
       sorter: {
         compare: (a, b) => a.storage.localeCompare(b.storage),
       },
@@ -157,16 +171,17 @@ export default function Archive(props) {
       title: "Data Status",
       dataIndex: "status",
       width: 90,
+      align: "center",
       showSorterTooltip: false,
       render: function (text, record, index) {
         if (
-          record.status == "archived" &&
+          //record.status == "archived" &&
           record.dataid == props.metadata.dataid
         ) {
           return (
             <Popover content={"Data is uploading."} placement="left">
               <span>
-                <LoadingOutlined /> Uploading
+                <LoadingOutlined />  Uploading
               </span>
             </Popover>
           );
@@ -200,7 +215,7 @@ export default function Archive(props) {
               placement="left"
             >
               <Button
-              className={"status-btn"}
+                className={"status-btn"}
                 disabled={selectedData.dataid !== record.dataid}
                 onClick={restoreDataset}
                 type="primary"
@@ -224,7 +239,7 @@ export default function Archive(props) {
               placement="left"
             >
               <Button
-              className={"status-btn"}
+                className={"status-btn"}
                 disabled={selectedData.dataid !== record.dataid}
                 onClick={restoreDataset}
                 type="primary"
@@ -248,7 +263,7 @@ export default function Archive(props) {
               placement="left"
             >
               <Button
-              className={"status-btn"}
+                className={"status-btn"}
                 disabled={selectedData.dataid !== record.dataid}
                 onClick={restoreDataset}
                 type="primary"
@@ -270,7 +285,7 @@ export default function Archive(props) {
               placement="left"
             >
               <Button
-              className={"status-btn"}
+                className={"status-btn"}
                 type="text"
                 block
                 size="small"
@@ -286,14 +301,14 @@ export default function Archive(props) {
               content={"Error: Data status is undefined."}
               placement="left"
             >
-            <Button
-            className={"status-btn"}
-              type="text"
-              block
-              size="small"
-              icon={<CloseCircleOutlined />}
+              <Button
+                className={"status-btn"}
+                type="text"
+                block
+                size="small"
+                icon={<CloseCircleOutlined />}
               >
-              {"Undefined"}
+                {"Undefined"}
               </Button>
             </Popover>
           );
@@ -333,7 +348,7 @@ export default function Archive(props) {
 
   // Load archive from local-store or by fetching from AWS
   async function loadArchive() {
-    // If cahced version of archive exists then load it
+    // If cached version of archive exists then load it
     if (localStorage.hasOwnProperty("archive") === true) {
       var cachedarchive = JSON.parse(localStorage.getItem("archive"));
       props.setarchivemeta(cachedarchive);
@@ -361,14 +376,7 @@ export default function Archive(props) {
       dataid: selectedData.dataid,
       status: restorestatus.status, // Refresh row selection to get fresh "status" value
       storage: selectedData.storage,
-      userid: selectedData.userid,
     });
-  }
-
-  // Return a count of keys for a given dataset
-  async function countKeys() {
-    var keycountnotification = await window.electron.countkeys(selectedData);
-    props.opennotification(keycountnotification);
   }
 
   // Handle download path selection, mediated by preload.js
@@ -380,7 +388,6 @@ export default function Archive(props) {
       var key = "path";
       var value = dataPath[0];
       setPathName({
-        //...pathName,
         [key]: value,
       });
     }
@@ -388,14 +395,14 @@ export default function Archive(props) {
 
   // Download dataset
   async function downloadData(params) {
-    var keylist = await window.electron.listkeys(params);
+    var keylist = await window.electron.listkeys(params); // Get list of files to be downloaded
     props.setdownloadlist(keylist);
     props.setdownloadparams(params);
     props.setdownloadstate(true);
   }
 
   return (
-    <Card size="small" title="Data Archive" bordered={true}>
+    <Card className="upload-card" size="small" title="Data Archive" bordered={true}>
       <Row gutter={[16, 16]}>
         <Col>
           <Button
@@ -450,21 +457,37 @@ export default function Archive(props) {
               "Select row and local download path before starting download."
             }
           >
-            <Button
-              disabled={selectedData.dataid === "" || pathName.path === ""}
-              type="primary"
-              block
-              onClick={() => {
-                downloadData({
-                  userid: selectedData.userid,
-                  dataid: selectedData.dataid,
-                  localpath: pathName.path,
-                });
-              }}
-              icon={<CloudDownloadOutlined />}
-            >
-              Start Download
-            </Button>
+            {props.downloadstate === false ? (
+              <Button
+                disabled={
+                  selectedData.dataid === "" ||
+                  pathName.path === "" ||
+                  props.downloadstate === true
+                }
+                type="primary"
+                size="middle"
+                block
+                onClick={() => {
+                  downloadData({
+                    dataid: selectedData.dataid,
+                    localpath: pathName.path,
+                  });
+                }}
+                icon={<CloudDownloadOutlined />}
+              >
+                Start Download
+              </Button>
+            ) : (
+              <Button
+                disabled={true}
+                type="primary"
+                size="middle"
+                block
+                icon={<LoadingOutlined />}
+              >
+                Download Active
+              </Button>
+            )}
           </Popover>
         </Col>
       </Row>

@@ -37,13 +37,14 @@ contextBridge.exposeInMainWorld("electron", {
     return status;
   },
 
-  countkeys: async (selecteddata) => {
-    const count = await ipcRenderer.invoke("countkeys", selecteddata);
-    return count;
-  },
-
   listkeys: async (params) => {
     const keys = await ipcRenderer.invoke("listkeys", params);
     return keys;
   },
+
+  updatemeta: async (params) => {
+    const status = await ipcRenderer.invoke("updatemeta", params);
+    return status;
+  },
+
 });

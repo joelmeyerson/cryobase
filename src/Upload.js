@@ -15,6 +15,7 @@ import {
   Progress,
   Row,
   Col,
+  Tag,
 } from "antd";
 import {
   FolderOutlined,
@@ -23,6 +24,7 @@ import {
   StopOutlined,
   CaretRightOutlined,
 } from "@ant-design/icons";
+import moment from "moment";
 const AWS = require("aws-sdk");
 
 export default function Upload(props) {
@@ -47,23 +49,47 @@ export default function Upload(props) {
       </div>
     ),
   };
-  // Reset file table when component reloads
-  // useEffect(() => {
-  //   props.setfilelist([]);
-  //   console.log(props)
-  // }, []);
+
+  // Clear form when transfer ends
+  useEffect(() => {
+    if (props.uploadstate === false) {
+      props.setuploadcount(0);
+      form.resetFields();
+      props.setfilelist([]);
+      props.setuploadpathname({
+        ["path"]: "",
+      });
+    }
+  }, [props.uploadstate]);
+
+  // When component loads populuate form with current metadata
+  useEffect(() => {
+    if (props.uploadcount !== 0) {
+      form.setFieldsValue({
+        ["apix"]: props.metadata.apix,
+        ["camera"]: props.metadata.camera,
+        ["cs"]: props.metadata.cs,
+        ["dataset"]: props.metadata.dataset,
+        ["date"]: moment(props.metadata.date, "YYYY-MM-DD"),
+        ["description"]: props.metadata.description,
+        ["dose"]: props.metadata.dose,
+        ["exposuretime"]: props.metadata.exposuretime,
+        ["filter"]: props.metadata.filter,
+        ["frames"]: props.metadata.frames,
+        ["mag"]: props.metadata.mag,
+        ["microscope"]: props.metadata.microscope,
+        // "path" handled in a different useEffect
+        ["storage"]: props.metadata.storage,
+        ["voltage"]: props.metadata.voltage,
+      });
+    }
+  }, []);
 
   // Update form fields when pathName state updates
   useEffect(() => {
     form.setFieldsValue(props.uploadpathname);
     populateTable();
   }, [props.uploadpathname]);
-
-  // useEffect(() => {
-  //   if (props.uploadstate === false) {
-  //     endTransfer();
-  //   }
-  // }, [props.uploadstate]);
 
   // Handle data path input, mediated by preload.js
   async function choosePath() {
@@ -74,7 +100,7 @@ export default function Upload(props) {
       var key = "path";
       var value = dataPath[0];
       props.setuploadpathname({
-        [key]: value
+        [key]: value,
       });
     }
   }
@@ -132,7 +158,7 @@ export default function Upload(props) {
     const min = new Date().getMinutes(); //Current minutes
     const sec = new Date().getSeconds(); //Current seconds
     const time =
-      year + "" + month + "" + date + "-" + hours + "" + min + "" + sec;
+      year + "-" + month + "-" + date + "-" + hours + "-" + min + "-" + sec;
 
     // Update metadata state with form values
     props.setmetadata({
@@ -146,7 +172,6 @@ export default function Upload(props) {
       dose: formvals.dose,
       exposuretime: formvals.exposuretime,
       filecount: props.filelist.length,
-      fileuploadcount: 0,
       filter: formvals.filter,
       frames: formvals.frames,
       mag: formvals.mag,
@@ -155,28 +180,20 @@ export default function Upload(props) {
       status: formvals.storage == "STANDARD" ? "standard" : "archived",
       storage: formvals.storage,
       timestamp: time,
+      uploadcompleted: false,
       voltage: formvals.voltage,
     });
-    props.setuploadstate(true)
-    props.setuitoggle(true); // Toggle the UI buttons and form
+    props.setuploadstate(true);
+    props.setuitoggle(true);
   }
 
   async function stopUpload() {
-    //props.setuploadstate(false)
+    await props.setuploadstate(false);
   }
-  // async function endTransfer() {
-  //   form.resetFields(); // Clear form
-  //   props.setuploadcount(0); // Reset transfer count
-  //   props.setmetadata({}); // Clear current metadata
-  //   props.setuitoggle(false); // Toggle UI
-  //   props.setuploadpathname({
-  //     ["path"]: "",
-  //   });
-  // }
 
   return (
-    <Card size="small" id="session" title="Upload Data" bordered={true}>
-      <Row justify="center" align="top" gutter={30}>
+    <Card className="archive-card" size="small" id="session" title="Upload Data" bordered={true}>
+      <Row justify="space-around" align="top">
         <Col span={10}>
           <Form
             id="sessionbuilder"
@@ -298,7 +315,7 @@ export default function Upload(props) {
                 <Select.Option value="Krios">Krios</Select.Option>
                 <Select.Option value="Arctica">Arctica</Select.Option>
                 <Select.Option value="Glacios">Glacios</Select.Option>
-                <Select.Option value="Tundra">Glacios</Select.Option>
+                <Select.Option value="Tundra">Tundra</Select.Option>
                 <Select.Option value="F30">F30</Select.Option>
                 <Select.Option value="F20">F20</Select.Option>
                 <Select.Option value="Polara">Polara</Select.Option>
@@ -464,38 +481,46 @@ export default function Upload(props) {
               </Select>
             </Form.Item>
 
-            <Divider />
-            <Row gutter={[16, 16]}>
+            <br></br>
+            <Row justify="center" align="top" gutter={[16, 16]}>
               <Col>
                 <Form.Item>
                   <Button
-                  icon={<CaretRightOutlined />}
+                    icon={<CaretRightOutlined />}
                     disabled={props.uitoggle}
                     type="primary"
+                    size="middle"
                     htmlType="submit"
                   >
                     Start Upload
                   </Button>
                 </Form.Item>
-              </Col>
-              <Col>
+                </Col>
+                <Col>
                 <Form.Item>
                   <Button
                     disabled={!props.uitoggle}
                     type="danger"
+                    size="middle"
                     icon={<StopOutlined />}
-                    onClick={stopUpload()}
+                    onClick={() => stopUpload()}
                   >
                     Stop Upload
                   </Button>
                 </Form.Item>
-              </Col>
-              <Col>
+                </Col>
+                <Col>
                 <Form.Item>
                   <Button
                     disabled={props.uitoggle}
+                    size="middle"
                     onClick={() => {
                       form.resetFields();
+                      props.setuploadcount(0); // Reset transfer count
+                      props.setfilelist([]);
+                      props.setuploadpathname({
+                        ["path"]: "",
+                      });
                     }}
                   >
                     Clear Form
@@ -506,8 +531,6 @@ export default function Upload(props) {
           </Form>
         </Col>
         <Col span={12}>
-          <Row gutter={[16, 16]}>
-
           <Table
             id="sessioninfo"
             columns={tableColumns}
@@ -519,32 +542,67 @@ export default function Upload(props) {
             loading={customLoading}
             pagination={false}
           />
-          </Row>
-          <Row gutter={[16, 16]}>
-          <Col span={12}>
-          <Card size="small" id="session" title="File Counts" bordered={true}>
-
-            Transfer count: {props.uploadcount} <br></br>
-            TIF files: {countFiles("tif")} <br></br>
-            TIFF files: {countFiles("tiff")} <br></br>
-            MRC files: {countFiles("mrc")} <br></br>
-            MRCS files: {countFiles("mrcs")} <br></br>
-            DM4 files: {countFiles("dm4")} <br></br>
-            Total files: {countFiles("total")} <br></br>
-
-          </Card>
-          </Col>
-          <Col span={12}>
-          <Card size="small" id="session" title="Transfer Status" bordered={true}>
-          <Progress
-          type="line"
-          percent={props.uploadstate === false ? 0 : Math.round(
-            100 * (props.uploadcount / props.filelist.length)
+          <br></br>
+          {props.filelist.length > 0 ? (
+            <div>
+              <Tag color="magenta">
+                TIF/TIFF: {countFiles("tif") + countFiles("tiff")}{" "}
+              </Tag>
+              <Tag color="green">
+                MRC/MRCS: {countFiles("mrc") + countFiles("mrcs")}{" "}
+              </Tag>
+              <Tag color="cyan">DM4: {countFiles("dm4")} </Tag>
+              <Tag color="gold">
+                Other:{" "}
+                {countFiles("total") -
+                  countFiles("tif") -
+                  countFiles("tiff") -
+                  countFiles("mrc") -
+                  countFiles("mrcs") -
+                  countFiles("dm4")}{" "}
+              </Tag>
+              <Tag color="blue">Total: {countFiles("total")} </Tag>
+            </div>
+          ) : (
+            ""
           )}
-          />
-          </Card>
-          </Col>
-          </Row>
+          <br></br>
+          {props.uploadstate === true ? (
+            <div>
+              <Progress
+                type="line"
+                strokeColor={"geekblue-4"}
+                status="active"
+                percent={
+                  props.uploadstate === false
+                    ? 0
+                    : Math.round(
+                        100 * (props.uploadcount / props.filelist.length)
+                      )
+                }
+              />
+
+              {props.uploadstate === false
+                ? "No active file transfer."
+                : "Files transferred: " +
+                  props.uploadcount +
+                  " / " +
+                  props.filelist.length}
+              <br></br>
+              {props.uploadstate === true &&
+              props.uploadcount < props.filelist.length ? (
+                <div>
+                  {" "}
+                  <LoadingOutlined /> {" "}
+                  {props.filelist[props.uploadcount].name}{" "}
+                </div>
+              ) : (
+                ""
+              )}
+            </div>
+          ) : (
+            ""
+          )}
         </Col>
       </Row>
     </Card>
