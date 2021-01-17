@@ -1,29 +1,47 @@
 /* node-style package resolution in CSS file */
 @import "~antd/dist/antd.css";
 
-/* HEADER */
-header.ant-layout-header {
-background: #DCDCDC;
+/* SIDER */
+.ant-layout-sider-children {
+height: 100vh;
+bottom: 0;
+position: sticky;
 }
 
 /* FOOTER */
-footer.ant-layout-footer {
+/* footer.ant-layout-footer {
 position: sticky;
 bottom: 0;
 height: 64px;
 background: #DCDCDC;
-}
+} */
 
 /* CARD */
-
-div.header-div {
-  font-size: 10;
+.card-login {
+  width: 400px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
-.archive-card .upload-card {
+.card-register {
+  width: 400px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* .archive-card {
   padding: 5px;
   height: calc(100vh - 50px);
 }
+
+.upload-card {
+  padding: 5px;
+  height: calc(100vh - 50px);
+} */
 
 /* TABLE */
 .ant-table-body {

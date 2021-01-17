@@ -234,7 +234,7 @@ export default function Upload(props) {
               name="dataset"
               valuePropName="value"
               rules={[
-                { required: "true", message: "Required field." },
+                { required: "true", message: "Required field."},
                 {
                   pattern: /^[a-zA-Z0-9-]+$/,
                   message: "Letters, numbers, and dashes only.",

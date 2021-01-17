@@ -231,9 +231,7 @@ function createWindow() {
     var stream = await s3.getObject(downloadparams).promise(); //Download metadata for target dataset
     var json = stream.Body.toString("utf-8");
     var metadata = JSON.parse(json);
-    console.log(metadata);
     metadata[arg.key] = arg.val; // Update key with val
-    console.log(metadata);
 
     var newjson = JSON.stringify(metadata); // Upload the new meta
     const uploadparams = {
