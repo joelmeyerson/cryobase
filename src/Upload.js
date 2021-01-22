@@ -62,6 +62,7 @@ export default function Upload(props) {
     }
   }, [props.uploadstate]);
 
+
   // When component loads populuate form with current metadata
   useEffect(() => {
     if (props.uploadcount !== 0) {
@@ -222,7 +223,7 @@ export default function Upload(props) {
                 value={props.uploadpathname.path}
                 onKeyDown={(e) => e.preventDefault()}
                 addonAfter={
-                  <span onClick={props.uitoggle ? null : choosePath}>
+                  <span onClick={props.lockui === true || props.uitoggle === true ? null : choosePath}>
                     <FolderOutlined />
                   </span>
                 }
@@ -487,7 +488,7 @@ export default function Upload(props) {
                 <Form.Item>
                   <Button
                     icon={<CaretRightOutlined />}
-                    disabled={props.uitoggle}
+                    disabled={props.lockui === true || props.uitoggle === true}
                     type="primary"
                     size="middle"
                     htmlType="submit"

@@ -12,12 +12,7 @@ const fse = require("fs-extra");
 const appName = app.getName();
 
 const s3 = new AWS.S3();
-const bucket = "user-bucket-01";
-//AWS.config.region = "us-east-1"; // Region
-AWS.config.accessKeyId = "AKIAIM2TGVNNH6GREFUQ";
-AWS.config.secretAccessKey = "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";
-process.env.AWS_ACCESS_KEY_ID = "AKIAIM2TGVNNH6GREFUQ";
-process.env.AWS_SECRET_ACCESS_KEY = "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";
+var bucket = "";
 
 const env = process.env.NODE_ENV || "development";
 
@@ -44,6 +39,19 @@ function createWindow() {
       contextIsolation: true,
       webSecurity: true,
     },
+  });
+
+  // Handle path selection through file browser (call from preload.js)
+  ipcMain.handle("configureaws", async (event, arg) => {
+    bucket = arg.bucket;
+    AWS.config.accessKeyId = arg.accessKey;
+    AWS.config.secretAccessKey = arg.secretKey;
+    var params = {
+      Bucket: bucket,
+      MaxKeys: 1,
+    };
+    const validateconfig = await listKeys(params);
+    return validateconfig;
   });
 
   // Handle path selection through file browser (call from preload.js)
@@ -163,7 +171,7 @@ function createWindow() {
         return keys;
       })
       .catch(function (err) {
-        console.log(err);
+        return "error";
       });
     return list;
   }
@@ -222,8 +230,6 @@ function createWindow() {
 
   // Update key/value pair in metadata (callable from renderer processes)
   ipcMain.handle("updatemeta", async (event, arg) => {
-    console.log(arg)
-    console.log(arg.dataid)
     var downloadparams = {
       Bucket: bucket,
       Key: "meta/" + arg.dataid + ".json",
@@ -348,7 +354,7 @@ function createWindow() {
           });
           // Example entry if key restore complete: Restore: 'ongoing-request="false", expiry-date="Fri, 31 Dec 1999 00:00:00 GMT"',
           // Example entry if key sent back to archive: "undefined"
-          if (typeof header.Restore === 'undefined') {
+          if (typeof header.Restore === "undefined") {
             // If any instance of "undefined" found in the header then data is all or partially back in archive
             restoreintact = false;
           } else if (header.Restore.includes("false")) {

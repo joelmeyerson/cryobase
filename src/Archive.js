@@ -105,7 +105,7 @@ export default function Archive(props) {
     {
       title: "Camera",
       dataIndex: "camera",
-      width: 70,
+      width: 80,
       sorter: {
         compare: (a, b) => a.camera.localeCompare(b.camera),
       },
@@ -117,25 +117,24 @@ export default function Archive(props) {
       showSorterTooltip: false,
       align: "center",
       render: function (text, record, index) {
-        if (record.dataid == props.metadata.dataid) {
+        if (record.dataid === props.metadata.dataid) {
           return (
             <span>
               {" "}
             </span>
           )
-        }
-        else if (record.uploadcompleted == false) {
+        } else if (record.uploadcompleted === false) {
           return (
             <Popover
-              content={"Warning: Dataset upload was incomplete."}
+              content={"Warning: dataset upload was incomplete."}
               placement="left"
             >
               <span>
-                <WarningTwoTone />
+                <WarningTwoTone twoToneColor="#f5222d" />
               </span>
             </Popover>
           );
-        } else if (record.uploadcompleted == true) {
+        } else if (record.uploadcompleted === true) {
           return (
             <Popover
               content={"Dataset upload was completed successfully."}
@@ -343,24 +342,19 @@ export default function Archive(props) {
 
   // Fetch archive list when component loads
   useEffect(() => {
-    loadArchive();
+    if (props.lockui === false) {
+      loadArchive();
+    }
   }, []);
 
   // Load archive from local-store or by fetching from AWS
   async function loadArchive() {
-    // If cached version of archive exists then load it
-    if (localStorage.hasOwnProperty("archive") === true) {
-      var cachedarchive = JSON.parse(localStorage.getItem("archive"));
-      props.setarchivemeta(cachedarchive);
-    } else {
-      // Otherwise download it
-      props.setgetarchive(true);
-    }
+    props.setgetarchive(true);
   }
 
   // Manually re-fetch archive
   async function reloadArchive() {
-    await props.setgetarchive(true);
+      await props.setgetarchive(true);
   }
 
   // Start restore or check restore status for Deep Glacier data
@@ -407,6 +401,7 @@ export default function Archive(props) {
         <Col>
           <Button
             onClick={reloadArchive}
+            disabled={props.lockui}
             block
             icon={<ReloadOutlined />}
             shape="round"
@@ -443,7 +438,7 @@ export default function Archive(props) {
             addonBefore={"Local Download Path"}
             onKeyDown={(e) => e.preventDefault()}
             addonAfter={
-              <span onClick={choosePath}>
+              <span onClick={props.lockui === true || props.uitoggle === true ? null : choosePath}>
                 <FolderOutlined />
               </span>
             }
@@ -454,12 +449,13 @@ export default function Archive(props) {
           <Popover
             placement="left"
             content={
-              "Select row and local download path before starting download."
+              "Select a row and a local download path in order to start download."
             }
           >
             {props.downloadstate === false ? (
               <Button
                 disabled={
+                  props.lockui === true ||
                   selectedData.dataid === "" ||
                   pathName.path === "" ||
                   props.downloadstate === true

@@ -4,28 +4,30 @@ import {
   Button,
   Row,
   Col,
-  Card,
-  Menu,
-  Sider,
   Popover,
   notification,
 } from "antd";
 import {
-  HddOutlined,
+  DatabaseOutlined,
   CloudUploadOutlined,
   SettingOutlined,
   FlagOutlined,
   LogoutOutlined,
-  UserOutlined,
 } from "@ant-design/icons";
-import { BrowserRouter, Route, Switch, Link } from "react-router-dom";
-import Cookies from "js-cookie";
+import {
+  HashRouter,
+  Route,
+  Switch,
+  Link,
+  Redirect,
+  useHistory,
+} from "react-router-dom";
 import "./App.css";
 import Archive from "./Archive.js";
 import Upload from "./Upload.js";
-import Authentication from "./Authentication.js";
-
-import AWS from "aws-sdk";
+import Login from "./Login.js";
+import Register from "./Register.js";
+import Settings from "./Settings.js";
 
 // Antd notification system
 async function openNotification(notificationText) {
@@ -35,16 +37,24 @@ async function openNotification(notificationText) {
     placement: "topRight",
     className: "custom-class",
     icon: <FlagOutlined />,
-    duration: 8,
+    duration: 6,
     style: {
       width: 800,
     },
   });
 }
 
-function App() {
-  const [token, setToken] = useState(true); // Store authentication token
-  const [auth, setAuth] = useState(false); // Store authentication state
+export default function App() {
+  const [auth, setAuth] = useState(false); // Authenticate if token obtained in login page
+  const [lockUI, setLockUI] = useState(true); // State to lock or unlock UI
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [configAWS, setConfigAWS] = useState({
+    bucket: "",
+    accessKey: "",
+    secretKey: "",
+  });
+  const [configValid, setConfigValid] = useState(false);
 
   const [getArchive, setGetArchive] = useState(false); // Trigger when to fetch metadata for Archive componenet
   const [archiveMeta, setArchiveMeta] = useState([]); // Store metadata to display in Archive table
@@ -65,6 +75,68 @@ function App() {
   const [uploadAWS, setUploadAWS] = useState(false); // Set whether AWS file upload active
   const [uploadCount, setUploadCount] = useState(0); // Counter for file upload
   const [uiToggle, setUiToggle] = useState(false); // Used to toggle UI after start and stop of upload
+
+  const history = useHistory();
+  history.push("/login"); // Can be used to force a path
+
+  // Load AWS bucket and credentials after user authenticates
+  useEffect(() => {
+    if (auth === true && localStorage.hasOwnProperty("configaws") === true) {
+      loadConfig();
+    }
+  }, [auth]);
+
+  async function loadConfig() {
+    var config = JSON.parse(localStorage.getItem("configaws"));
+    setConfigAWS(config);
+  }
+
+  async function saveConfig(config) {
+    localStorage.setItem("configaws", JSON.stringify(config));
+    setConfigAWS(config);
+  }
+
+  async function configureAWS(config) {
+    var validateaws = await window.electron.configureaws(config);
+    if (validateaws === "error") {
+      openNotification(
+        "AWS configuration is not valid. Please check settings and try again."
+      );
+      setConfigAWS({
+        ["bucket"]: "",
+        ["accessKey"]: "",
+        ["secretKey"]: "",
+      });
+      setConfigValid(false);
+    } else {
+      setConfigAWS(config);
+      setConfigValid(true);
+      setGetArchive(true); // Load archive
+      openNotification("AWS configuration is valid.");
+    }
+  }
+
+  // Handle global UI lock
+  useEffect(() => {
+    if (auth === true && configValid === true) {
+      toggleLockUI(false);
+    } else {
+      toggleLockUI(true);
+    }
+  }, [auth, configValid]);
+
+  async function toggleLockUI(bool) {
+    setLockUI(bool);
+  }
+
+  // Control user settings modal
+  async function openUserSettings() {
+    setModalVisible(true);
+  }
+
+  const handleClose = () => {
+    setModalVisible(false);
+  };
 
   // Fetch metadata archive to populate table
   useEffect(() => {
@@ -120,21 +192,23 @@ function App() {
     setUploadState(false);
     setUiToggle(false);
     setUploadCount(0); // Reset transfer count
-    var status = window.electron.updatemeta({
+    var status = await window.electron.updatemeta({
       dataid: metaData.dataid,
       key: "uploadcompleted",
       val: true,
     });
+    await setGetArchive(true);
     setMetaData({}); // Clear current metadata
   }
   async function cancelUpload() {
     setUiToggle(false);
     setUploadCount(0); // Reset transfer count
-    var status = window.electron.updatemeta({
-      dataid: metaData.dataid,
-      key: "uploadcompleted",
-      val: false,
-    });
+    // var status = await window.electron.updatemeta({
+    //   dataid: metaData.dataid,
+    //   key: "uploadcompleted",
+    //   val: false,
+    // });
+    await setGetArchive(true);
     setMetaData({}); // Clear current metadata
   }
 
@@ -179,198 +253,168 @@ function App() {
   }
 
   return (
-    <Switch>
-      <Route
-        path="/"
-        render={(props) =>
-          token === null ? (
-            <PublicLayout
-              settoken={setToken}
-              opennotification={openNotification}
-            />
-          ) : (
-            <ProtectedLayout
-              settoken={setToken}
-              opennotification={openNotification}
-              getarchive={getArchive}
-              setgetarchive={setGetArchive}
-              archivemeta={archiveMeta}
-              setarchivemeta={setArchiveMeta}
-              buttonloading={buttonLoading}
-              setbuttonloading={setButtonLoading}
-              downloadstate={downloadState}
-              setdownloadstate={setDownloadState}
-              downloadconnect={downloadConnect}
-              setdownloadconnect={setDownloadConnect}
-              downloadparams={downloadParams}
-              setdownloadparams={setDownloadParams}
-              downloadcount={downloadCount}
-              setdownloadcount={setDownloadCount}
-              downloadlist={downloadList}
-              setdownloadlist={setDownloadList}
-              uploadpathname={uploadPathName}
-              setuploadpathname={setUploadPathName}
-              uploadtableloading={uploadTableLoading}
-              setuploadtableloading={setUploadTableLoading}
-              filelist={fileList}
-              setfilelist={setFileList}
-              metadata={metaData}
-              setmetadata={setMetaData}
-              uploadstate={uploadState}
-              setuploadstate={setUploadState}
-              uploadaws={uploadAWS}
-              setuploadaws={setUploadAWS}
-              uploadcount={uploadCount}
-              setuploadcount={setUploadCount}
-              uitoggle={uiToggle}
-              setuitoggle={setUiToggle}
-            />
-          )
-        }
-      />
-    </Switch>
+    <HashRouter>
+      {auth === false ? (
+        <Layout>
+          <Layout.Content>
+            <Switch>
+              <Route
+                path="/login"
+                render={(props) => (
+                  <Login
+                    setauth={setAuth}
+                    opennotification={openNotification}
+                  />
+                )}
+              />
+              <Route
+                path="/register"
+                render={(props) => (
+                  <Register
+                    setauth={setAuth}
+                    opennotification={openNotification}
+                  />
+                )}
+              />
+              <Redirect from="/" to="/login" exact />
+            </Switch>
+          </Layout.Content>
+        </Layout>
+      ) : (
+        <Layout>
+          <Layout.Sider theme="dark" width={60}>
+            <Row justify="space-around" gutter={[8, 64]}>
+              <Col></Col>
+            </Row>
+
+            <Row justify="space-around" gutter={[8, 24]}>
+              <Col>
+                <Link to="/archive">
+                  <Popover content={"Data Archive"} placement="right">
+                    <Button
+                      type="primary"
+                      shape="circle"
+                      icon={<DatabaseOutlined />}
+                      size="large"
+                    ></Button>
+                  </Popover>
+                </Link>
+              </Col>
+            </Row>
+
+            <Row justify="space-around" gutter={[8, 24]}>
+              <Col>
+                <Link to="/upload">
+                  <Popover content={"Upload Data"} placement="right">
+                    <Button
+                      type="primary"
+                      shape="circle"
+                      icon={<CloudUploadOutlined />}
+                      shape="circle"
+                      size="large"
+                    ></Button>
+                  </Popover>
+                </Link>
+              </Col>
+            </Row>
+
+            <Row justify="space-around" gutter={[8, 24]}>
+              <Col>
+                <Popover content={"Settings"} placement="right">
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    icon={<SettingOutlined />}
+                    size="large"
+                    onClick={openUserSettings}
+                  ></Button>
+                </Popover>
+              </Col>
+            </Row>
+
+            <Row justify="space-around" gutter={[8, 24]}>
+              <Col>
+                <Popover content={"Logout"} placement="right">
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    danger
+                    icon={<LogoutOutlined />}
+                    size="large"
+                    onClick={() => {
+                      setAuth(false);
+                      history.push("/login");
+                      openNotification("Logged out.");
+                    }}
+                  ></Button>
+                </Popover>
+              </Col>
+            </Row>
+          </Layout.Sider>
+          <Layout>
+            <Layout.Content>
+              <Settings
+                auth={auth}
+                opennotification={openNotification}
+                handleclose={handleClose}
+                modalvisible={modalVisible}
+                configaws={configAWS}
+                configureaws={configureAWS}
+                setconfigaws={setConfigAWS}
+                uploadstate={uploadState}
+                downloadstate={downloadState}
+              />
+              <Switch>
+                <Route path="/archive">
+                  <Archive
+                    lockui={lockUI}
+                    opennotification={openNotification}
+                    getarchive={getArchive}
+                    setgetarchive={setGetArchive}
+                    archivemeta={archiveMeta}
+                    setarchivemeta={setArchiveMeta}
+                    buttonloading={buttonLoading}
+                    setbuttonloading={setButtonLoading}
+                    downloadstate={downloadState}
+                    setdownloadstate={setDownloadState}
+                    downloadconnect={downloadConnect}
+                    setdownloadconnect={setDownloadConnect}
+                    downloadparams={downloadParams}
+                    setdownloadparams={setDownloadParams}
+                    downloadcount={downloadCount}
+                    setdownloadcount={setDownloadCount}
+                    downloadlist={downloadList}
+                    setdownloadlist={setDownloadList}
+                    metadata={metaData}
+                  />
+                </Route>
+                <Route exact path={"/upload"}>
+                  <Upload
+                    lockui={lockUI}
+                    uploadpathname={uploadPathName}
+                    setuploadpathname={setUploadPathName}
+                    uploadtableloading={uploadTableLoading}
+                    setuploadtableloading={setUploadTableLoading}
+                    filelist={fileList}
+                    setfilelist={setFileList}
+                    metadata={metaData}
+                    setmetadata={setMetaData}
+                    uploadstate={uploadState}
+                    setuploadstate={setUploadState}
+                    uploadaws={uploadAWS}
+                    setuploadaws={setUploadAWS}
+                    uploadcount={uploadCount}
+                    setuploadcount={setUploadCount}
+                    uitoggle={uiToggle}
+                    setuitoggle={setUiToggle}
+                  />
+                </Route>
+                <Redirect from={"/login"} to="/archive" exact />
+              </Switch>
+            </Layout.Content>
+          </Layout>
+        </Layout>
+      )}
+    </HashRouter>
   );
 }
-
-// Public layout
-export const PublicLayout = (props) => (
-  <BrowserRouter>
-    <Layout>
-      <Layout.Content>
-        <Switch>
-          <Route path="/">
-            <Authentication
-            settoken={props.settoken}
-            opennotification={props.opennotification}
-            />
-          </Route>
-        </Switch>
-      </Layout.Content>
-    </Layout>
-  </BrowserRouter>
-);
-
-// Private layout
-export const ProtectedLayout = (props) => (
-  <BrowserRouter>
-    <Layout>
-      <Layout.Sider theme="dark" width={60}>
-        <Row justify="space-around" gutter={[8, 64]}>
-          <Col></Col>
-        </Row>
-
-        <Row justify="space-around" gutter={[8, 24]}>
-          <Col>
-            <Link to="/archive">
-              <Popover content={"Data Archive"} placement="right">
-                <Button
-                  type="primary"
-                  icon={<HddOutlined />}
-                  shape="circle"
-                  size="large"
-                ></Button>
-              </Popover>
-            </Link>
-          </Col>
-        </Row>
-
-        <Row justify="space-around" gutter={[8, 24]}>
-          <Col>
-            <Link to="/upload">
-              <Popover content={"Upload Data"} placement="right">
-                <Button
-                  type="primary"
-                  shape="circle"
-                  icon={<CloudUploadOutlined />}
-                  shape="circle"
-                  size="large"
-                ></Button>
-              </Popover>
-            </Link>
-          </Col>
-        </Row>
-
-        <Row justify="space-around" gutter={[8, 24]}>
-          <Col>
-            <Popover content={"User Settings"} placement="right">
-              <Button
-                type="primary"
-                icon={<UserOutlined />}
-                shape="circle"
-                size="large"
-              ></Button>
-            </Popover>
-          </Col>
-        </Row>
-
-        <Row justify="space-around" gutter={[8, 24]}>
-          <Col>
-            <Popover content={"Logout"} placement="right">
-              <Button
-                type="primary"
-                danger
-                icon={<LogoutOutlined />}
-                shape="circle"
-                size="large"
-                onClick={() => {
-                  props.settoken(null)
-                  openNotification("Logged out.");
-                }}
-              ></Button>
-            </Popover>
-          </Col>
-        </Row>
-      </Layout.Sider>
-      <Layout>
-        <Layout.Content>
-          <Switch>
-            <Route path={["/", "/archive"]}>
-              <Archive
-                opennotification={props.opennotification}
-                getarchive={props.getarchive}
-                setgetarchive={props.setgetarchive}
-                archivemeta={props.archivemeta}
-                setarchivemeta={props.setarchivemeta}
-                buttonloading={props.buttonloading}
-                setbuttonloading={props.setbuttonloading}
-                downloadstate={props.downloadstate}
-                setdownloadstate={props.setdownloadstate}
-                downloadconnect={props.downloadconnect}
-                setdownloadconnect={props.setdownloadconnect}
-                downloadparams={props.downloadparams}
-                setdownloadparams={props.setdownloadparams}
-                downloadcount={props.downloadcount}
-                setdownloadcount={props.setdownloadcount}
-                downloadlist={props.downloadlist}
-                setdownloadlist={props.setdownloadlist}
-                metadata={props.metadata}
-              />
-            </Route>
-            <Route path={"/upload"}>
-              <Upload
-                uploadpathname={props.uploadpathname}
-                setuploadpathname={props.setuploadpathname}
-                uploadtableloading={props.uploadtableloading}
-                setuploadtableloading={props.setuploadtableloading}
-                filelist={props.filelist}
-                setfilelist={props.setfilelist}
-                metadata={props.metadata}
-                setmetadata={props.setmetadata}
-                uploadstate={props.uploadstate}
-                setuploadstate={props.setuploadstate}
-                uploadaws={props.uploadaws}
-                setuploadaws={props.setuploadaws}
-                uploadcount={props.uploadcount}
-                setuploadcount={props.setuploadcount}
-                uitoggle={props.uitoggle}
-                setuitoggle={props.setuitoggle}
-              />
-            </Route>
-          </Switch>
-        </Layout.Content>
-      </Layout>
-    </Layout>
-  </BrowserRouter>
-);
-
-export default App;
