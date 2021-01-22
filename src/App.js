@@ -37,7 +37,7 @@ async function openNotification(notificationText) {
     placement: "topRight",
     className: "custom-class",
     icon: <FlagOutlined />,
-    duration: 6,
+    duration: 4,
     style: {
       width: 800,
     },
@@ -46,6 +46,7 @@ async function openNotification(notificationText) {
 
 export default function App() {
   const [auth, setAuth] = useState(false); // Authenticate if token obtained in login page
+  const [authUser, setAuthUser] = useState("");
   const [lockUI, setLockUI] = useState(true); // State to lock or unlock UI
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -59,7 +60,6 @@ export default function App() {
   const [getArchive, setGetArchive] = useState(false); // Trigger when to fetch metadata for Archive componenet
   const [archiveMeta, setArchiveMeta] = useState([]); // Store metadata to display in Archive table
   const [buttonLoading, setButtonLoading] = useState(false); // Toggle button loading
-  const [currentDataID, setCurrentDataID] = useState({ dataid: "" }); // Currently selected data ID
 
   const [downloadState, setDownloadState] = useState(false); // Set whether AWS file download active
   const [downloadConnect, setDownloadConnect] = useState(false); // Set whether AWS file download active
@@ -77,7 +77,7 @@ export default function App() {
   const [uiToggle, setUiToggle] = useState(false); // Used to toggle UI after start and stop of upload
 
   const history = useHistory();
-  history.push("/login"); // Can be used to force a path
+  //history.push("/login"); // Can be used to force a path
 
   // Load AWS bucket and credentials after user authenticates
   useEffect(() => {
@@ -103,13 +103,14 @@ export default function App() {
         "AWS configuration is not valid. Please check settings and try again."
       );
       setConfigAWS({
-        ["bucket"]: "",
-        ["accessKey"]: "",
-        ["secretKey"]: "",
+        "bucket": "",
+        "accessKey": "",
+        "secretKey": "",
       });
       setConfigValid(false);
     } else {
-      setConfigAWS(config);
+      //setConfigAWS(config);
+      saveConfig(config)
       setConfigValid(true);
       setGetArchive(true); // Load archive
       openNotification("AWS configuration is valid.");
@@ -140,7 +141,7 @@ export default function App() {
 
   // Fetch metadata archive to populate table
   useEffect(() => {
-    if (getArchive == true) {
+    if (getArchive === true) {
       fetchArchive(); // Start transfer for the file
     }
   }, [getArchive]);
@@ -184,7 +185,7 @@ export default function App() {
 
   async function dataUpload(params) {
     setUploadAWS(true); // Set state before start AWS transfer
-    var status = await window.electron.senddata(params);
+    await window.electron.senddata(params);
     setUploadCount(uploadCount + 1); // Increment counter to track file index
     setUploadAWS(false); // Set state after AWS transfer concludes
   }
@@ -192,7 +193,7 @@ export default function App() {
     setUploadState(false);
     setUiToggle(false);
     setUploadCount(0); // Reset transfer count
-    var status = await window.electron.updatemeta({
+    await window.electron.updatemeta({
       dataid: metaData.dataid,
       key: "uploadcompleted",
       val: true,
@@ -220,14 +221,14 @@ export default function App() {
   }, [metaData]);
 
   async function sendMetaData(meta) {
-    var status = await window.electron.sendmetadata(meta);
+    await window.electron.sendmetadata(meta);
   }
 
   // Handle data download
   useEffect(() => {
     if (
-      downloadState == true &&
-      downloadConnect == false &&
+      downloadState === true &&
+      downloadConnect === false &&
       downloadCount < downloadList.length
     ) {
       var params = {
@@ -237,7 +238,7 @@ export default function App() {
       };
 
       getData(params); // Start transfer for the file
-    } else if (downloadState == true && downloadCount == downloadList.length) {
+    } else if (downloadState === true && downloadCount === downloadList.length) {
       setDownloadState(false);
       setDownloadList([]); // Clear current list
       setDownloadParams({});
@@ -247,7 +248,7 @@ export default function App() {
 
   async function getData(params) {
     setDownloadConnect(true); // Set state before start AWS transfer
-    var status = await window.electron.getdata(params);
+    await window.electron.getdata(params);
     setDownloadCount(downloadCount + 1); // Increment counter to track file index
     setDownloadConnect(false); // Set state after AWS transfer concludes
   }
@@ -263,6 +264,10 @@ export default function App() {
                 render={(props) => (
                   <Login
                     setauth={setAuth}
+                    setauthuser={setAuthUser}
+                    setconfigaws={setConfigAWS}
+                    configaws={configAWS}
+                    setconfigvalid={setConfigValid}
                     opennotification={openNotification}
                   />
                 )}
@@ -344,6 +349,8 @@ export default function App() {
                     onClick={() => {
                       setAuth(false);
                       history.push("/login");
+                      setArchiveMeta([]) // Clear metadata archive in state
+                      localStorage.removeItem('archivemeta') // Clear metadata archive in local storage
                       openNotification("Logged out.");
                     }}
                   ></Button>
@@ -355,6 +362,7 @@ export default function App() {
             <Layout.Content>
               <Settings
                 auth={auth}
+                authuser={authUser}
                 opennotification={openNotification}
                 handleclose={handleClose}
                 modalvisible={modalVisible}

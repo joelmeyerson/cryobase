@@ -22,11 +22,6 @@ require("electron-reload")(__dirname, {
   electron: require(`${__dirname}/node_modules/electron`),
 });
 
-// async function clearCache () {
-//   await session.defaultSession.clearCache();
-//   await session.defaultSession.clearStorageData();
-// }
-
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({

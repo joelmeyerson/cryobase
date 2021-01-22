@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   Form,
   Card,
@@ -8,10 +8,8 @@ import {
   DatePicker,
   InputNumber,
   Popover,
-  notification,
   Switch,
   Table,
-  Divider,
   Progress,
   Row,
   Col,
@@ -25,7 +23,6 @@ import {
   CaretRightOutlined,
 } from "@ant-design/icons";
 import moment from "moment";
-const AWS = require("aws-sdk");
 
 export default function Upload(props) {
   const [form] = Form.useForm(); // Create ANTD form
@@ -57,7 +54,7 @@ export default function Upload(props) {
       form.resetFields();
       props.setfilelist([]);
       props.setuploadpathname({
-        ["path"]: "",
+        "path": "",
       });
     }
   }, [props.uploadstate]);
@@ -67,21 +64,21 @@ export default function Upload(props) {
   useEffect(() => {
     if (props.uploadcount !== 0) {
       form.setFieldsValue({
-        ["apix"]: props.metadata.apix,
-        ["camera"]: props.metadata.camera,
-        ["cs"]: props.metadata.cs,
-        ["dataset"]: props.metadata.dataset,
-        ["date"]: moment(props.metadata.date, "YYYY-MM-DD"),
-        ["description"]: props.metadata.description,
-        ["dose"]: props.metadata.dose,
-        ["exposuretime"]: props.metadata.exposuretime,
-        ["filter"]: props.metadata.filter,
-        ["frames"]: props.metadata.frames,
-        ["mag"]: props.metadata.mag,
-        ["microscope"]: props.metadata.microscope,
+        "apix": props.metadata.apix,
+        "camera": props.metadata.camera,
+        "cs": props.metadata.cs,
+        "dataset": props.metadata.dataset,
+        "date": moment(props.metadata.date, "YYYY-MM-DD"),
+        "description": props.metadata.description,
+        "dose": props.metadata.dose,
+        "exposuretime": props.metadata.exposuretime,
+        "filter": props.metadata.filter,
+        "frames": props.metadata.frames,
+        "mag": props.metadata.mag,
+        "microscope": props.metadata.microscope,
         // "path" handled in a different useEffect
-        ["storage"]: props.metadata.storage,
-        ["voltage"]: props.metadata.voltage,
+        "storage": props.metadata.storage,
+        "voltage": props.metadata.voltage,
       });
     }
   }, []);
@@ -95,8 +92,7 @@ export default function Upload(props) {
   // Handle data path input, mediated by preload.js
   async function choosePath() {
     var dataPath = await window.electron.selectdirectory();
-    if (dataPath.length == 0) {
-      console.log("Cancelled path selection.");
+    if (dataPath.length === 0) {
     } else {
       var key = "path";
       var value = dataPath[0];
@@ -178,7 +174,7 @@ export default function Upload(props) {
       mag: formvals.mag,
       microscope: formvals.microscope,
       path: formvals.path,
-      status: formvals.storage == "STANDARD" ? "standard" : "archived",
+      status: formvals.storage === "STANDARD" ? "standard" : "archived",
       storage: formvals.storage,
       timestamp: time,
       uploadcompleted: false,
@@ -520,7 +516,7 @@ export default function Upload(props) {
                       props.setuploadcount(0); // Reset transfer count
                       props.setfilelist([]);
                       props.setuploadpathname({
-                        ["path"]: "",
+                        "path": "",
                       });
                     }}
                   >

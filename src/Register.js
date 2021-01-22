@@ -1,32 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { Form, Input, Button, Card, Row, Col } from "antd";
+import { Link, useHistory } from "react-router-dom";
 import {
-  Form,
-  Input,
-  Button,
-  Checkbox,
-  Card,
-  Tag,
-  Popover,
-  Row,
-  Col,
-} from "antd";
-import {
-  UserOutlined,
-  LockOutlined,
-  KeyOutlined,
-  MailOutlined,
-} from "@ant-design/icons";
-import {
-  BrowserRouter,
-  Route,
-  Switch,
-  Link,
-  useHistory,
-} from "react-router-dom";
-import {
-  validateUser,
-  fetchLicense,
-  validateLicense,
   registerUser,
   createUserToken,
   createLicense,
@@ -34,7 +9,6 @@ import {
 
 export default function Register(props) {
   const [form] = Form.useForm();
-  const [loading, setloading] = useState(false); // Toggles loading and UI lock while logging in or registering
 
   const history = useHistory();
 

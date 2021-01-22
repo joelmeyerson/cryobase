@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Button,
-  Row,
-  Col,
-  Modal,
-  Input,
-  Tag,
-  Divider,
-  Select,
-  Form,
-} from "antd";
+import { Button, Row, Col, Modal, Input, Tag, Divider, Form } from "antd";
 import "./App.css";
 
 export default function Settings(props) {
@@ -22,15 +12,15 @@ export default function Settings(props) {
 
   // Handle form completion
   async function onFinish(formvals) {
-    await setValidating(true)
+    await setValidating(true);
     const creds = {
-      ["bucket"]: formvals.bucket,
-      ["accessKey"]: formvals.accesskey,
-      ["secretKey"]: formvals.secretkey,
-    }
-    await props.configureaws(creds)
+      "bucket": formvals.bucket,
+      "accessKey": formvals.accesskey,
+      "secretKey": formvals.secretkey,
+    };
+    await props.configureaws(creds);
     form.resetFields();
-    await setValidating(false)
+    await setValidating(false);
   }
 
   return (
@@ -39,17 +29,26 @@ export default function Settings(props) {
       visible={props.modalvisible}
       closable={false}
       footer={[
-        <Button key="close" onClick={props.handleclose} type="primary" disabled={validating}>
+        <Button
+          key="close"
+          onClick={props.handleclose}
+          type="primary"
+          disabled={validating}
+        >
           Close
         </Button>,
       ]}
     >
       <Row>
         <Col>
-        <span>
-          Version: <Tag>1.0.b</Tag>
-        </span>
-        <br></br>
+          <span>
+            Version: <Tag>1.0.b</Tag>
+          </span>
+          <br></br>
+          <span>
+            User: <Tag>{props.authuser}</Tag>
+          </span>
+          <br></br>
           {props.auth === true ? (
             <span>
               License: <Tag color="green">VALID</Tag>
@@ -59,16 +58,13 @@ export default function Settings(props) {
               License: <Tag color="red">INVALID</Tag>
             </span>
           )}
-
         </Col>
       </Row>
 
       <Divider></Divider>
 
       {props.configaws.bucket === "" ? (
-        <p>
-        Enter AWS S3 configuration.
-        </p>
+        <p>Enter AWS S3 configuration.</p>
       ) : (
         <p>
           Bucket: <Tag color="blue">{props.configaws.bucket}</Tag>

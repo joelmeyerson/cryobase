@@ -1,22 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { Card, Button, Input, Table, Popover, Tag, Row, Col } from "antd";
 import {
-  Card,
-  Button,
-  Input,
-  Table,
-  Radio,
-  Popover,
-  Divider,
-  Tag,
-  Row,
-  Col,
-} from "antd";
-import {
-  InfoCircleOutlined,
-  FileTextOutlined,
   SwitcherOutlined,
-  BorderOuterOutlined,
-  BorderlessTableOutlined,
   WalletOutlined,
   ReloadOutlined,
   FolderOutlined,
@@ -28,7 +13,6 @@ import {
   CloseCircleOutlined,
   WarningTwoTone,
 } from "@ant-design/icons";
-const AWS = require("aws-sdk");
 
 export default function Archive(props) {
   // Set up state
@@ -118,11 +102,7 @@ export default function Archive(props) {
       align: "center",
       render: function (text, record, index) {
         if (record.dataid === props.metadata.dataid) {
-          return (
-            <span>
-              {" "}
-            </span>
-          )
+          return <span> </span>;
         } else if (record.uploadcompleted === false) {
           return (
             <Popover
@@ -175,16 +155,16 @@ export default function Archive(props) {
       render: function (text, record, index) {
         if (
           //record.status == "archived" &&
-          record.dataid == props.metadata.dataid
+          record.dataid === props.metadata.dataid
         ) {
           return (
             <Popover content={"Data is uploading."} placement="left">
               <span>
-                <LoadingOutlined />  Uploading
+                <LoadingOutlined /> Uploading
               </span>
             </Popover>
           );
-        } else if (record.status == "archived") {
+        } else if (record.status === "archived") {
           return (
             <Popover
               content={"Select row and click button to restore data."}
@@ -205,7 +185,7 @@ export default function Archive(props) {
               </Button>
             </Popover>
           );
-        } else if (record.status == "restoring") {
+        } else if (record.status === "restoring") {
           return (
             <Popover
               content={
@@ -229,7 +209,7 @@ export default function Archive(props) {
               </Button>
             </Popover>
           );
-        } else if (record.status == "restored") {
+        } else if (record.status === "restored") {
           return (
             <Popover
               content={
@@ -253,7 +233,7 @@ export default function Archive(props) {
               </Button>
             </Popover>
           );
-        } else if (record.status == "archiving") {
+        } else if (record.status === "archiving") {
           return (
             <Popover
               content={
@@ -277,7 +257,7 @@ export default function Archive(props) {
               </Button>
             </Popover>
           );
-        } else if (record.status == "standard") {
+        } else if (record.status === "standard") {
           return (
             <Popover
               content={"Data is available for download."}
@@ -354,7 +334,7 @@ export default function Archive(props) {
 
   // Manually re-fetch archive
   async function reloadArchive() {
-      await props.setgetarchive(true);
+    await props.setgetarchive(true);
   }
 
   // Start restore or check restore status for Deep Glacier data
@@ -396,7 +376,12 @@ export default function Archive(props) {
   }
 
   return (
-    <Card className="upload-card" size="small" title="Data Archive" bordered={true}>
+    <Card
+      className="upload-card"
+      size="small"
+      title="Data Archive"
+      bordered={true}
+    >
       <Row gutter={[16, 16]}>
         <Col>
           <Button
@@ -438,7 +423,13 @@ export default function Archive(props) {
             addonBefore={"Local Download Path"}
             onKeyDown={(e) => e.preventDefault()}
             addonAfter={
-              <span onClick={props.lockui === true || props.uitoggle === true ? null : choosePath}>
+              <span
+                onClick={
+                  props.lockui === true || props.uitoggle === true
+                    ? null
+                    : choosePath
+                }
+              >
                 <FolderOutlined />
               </span>
             }

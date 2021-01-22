@@ -1,27 +1,7 @@
-import React, { useState, useEffect } from "react";
-import {
-  Form,
-  Input,
-  Button,
-  Checkbox,
-  Card,
-  Tag,
-  Popover,
-  Row,
-  Col,
-} from "antd";
-import {
-  UserOutlined,
-  LockOutlined,
-  KeyOutlined,
-  MailOutlined,
-} from "@ant-design/icons";
-import {
-  BrowserRouter,
-  Route,
-  Switch,
-  Link,
-} from "react-router-dom";
+import React from "react";
+import { Form, Input, Button, Card, Popover, Row, Col } from "antd";
+import { UserOutlined, LockOutlined } from "@ant-design/icons";
+import { Link } from "react-router-dom";
 import {
   validateUser,
   fetchLicense,
@@ -33,6 +13,27 @@ import {
 
 export default function Login(props) {
   const [form] = Form.useForm();
+
+  // If user succesfully authenticates, check if there is existing AWS config. Prevents new user from accessing previous user's AWS config
+  async function checkPreviousUser(authuser) {
+    if (localStorage.hasOwnProperty("user") === true) {
+      var previoususer = JSON.parse(localStorage.getItem("user"));
+      if (authuser !== previoususer) {
+        await props.setconfigaws({ // Clear AWS config from state
+          bucket: "",
+          accessKey: "",
+          secretKey: "",
+        });
+        localStorage.removeItem('configaws') // Clear AWS config from local storage
+        props.setconfigvalid(false) // Set AWS config to invalid
+        localStorage.setItem("user", JSON.stringify(authuser)); // Store the new user name
+      }
+    } else {
+      console.log("outside:",authuser);
+      console.log("else statement...");
+      localStorage.setItem("user", JSON.stringify(authuser)); // Create a "user" in local storage since none exists
+    }
+  }
 
   async function onFinish(values) {
     const [dataUser, errorsUser] = await validateUser(
@@ -53,6 +54,8 @@ export default function Login(props) {
 
         if (metaValidate.constant === "VALID") {
           // License is valid
+          await checkPreviousUser(values.email); // If new user does not match previous user, clear AWS config
+          props.setauthuser(values.email);
           props.setauth(true);
           props.opennotification("Login successful.");
         } else {
@@ -74,12 +77,8 @@ export default function Login(props) {
   }
 
   return (
-    <Card className="card-login" title="CryoBase" >
-      <Form
-        name="login"
-        form={form}
-        onFinish={onFinish}
-      >
+    <Card className="card-login" title="CryoBase">
+      <Form name="login" form={form} onFinish={onFinish}>
         <Form.Item
           name="email"
           rules={[
@@ -94,7 +93,7 @@ export default function Login(props) {
             name="email"
             id="email"
             prefix={<UserOutlined className="site-form-item-icon" />}
-            placeholder="Email Address"
+            placeholder="Email address"
           />
         </Form.Item>
         <Form.Item
