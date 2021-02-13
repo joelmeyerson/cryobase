@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Form, Input, Button, Card, Popover, Row, Col } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
@@ -13,6 +13,11 @@ import {
 
 export default function Login(props) {
   const [form] = Form.useForm();
+
+  // When component loads reset the user token state variable. Safeguard for when user logs out and the same or another user logs in.
+  useEffect(() => {
+    props.setauthuserdata({})
+  }, []);
 
   // If user succesfully authenticates, check if there is existing AWS config. Prevents new user from accessing previous user's AWS config
   async function checkPreviousUser(authuser) {
@@ -55,8 +60,9 @@ export default function Login(props) {
         if (metaValidate.constant === "VALID") {
           // License is valid
           await checkPreviousUser(values.email); // If new user does not match previous user, clear AWS config
-          props.setauthuser(values.email);
-          props.setauth(true);
+          props.setauthuser(values.email); // Store user email for use inside app
+          props.setauthuserdata(dataUser); // Store token for checking license inside app
+          props.setauth(true); // User is now authenticated
           props.opennotification("Login successful.");
         } else {
           props.opennotification("There was an error validating the license.");

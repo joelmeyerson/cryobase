@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Layout,
-  Button,
-  Row,
-  Col,
-  Popover,
-  notification,
-} from "antd";
+import { Layout, Button, Row, Col, Popover, notification } from "antd";
 import {
   DatabaseOutlined,
   CloudUploadOutlined,
@@ -28,13 +21,18 @@ import Upload from "./Upload.js";
 import Login from "./Login.js";
 import Register from "./Register.js";
 import Settings from "./Settings.js";
+import {
+  validateUser,
+  fetchLicense,
+  validateLicense,
+} from "./Authentication.js";
 
 // Antd notification system
 async function openNotification(notificationText) {
   notification.open({
     message: notificationText,
     description: "",
-    placement: "topRight",
+    placement: "bottomRight",
     className: "custom-class",
     icon: <FlagOutlined />,
     duration: 4,
@@ -46,7 +44,8 @@ async function openNotification(notificationText) {
 
 export default function App() {
   const [auth, setAuth] = useState(false); // Authenticate if token obtained in login page
-  const [authUser, setAuthUser] = useState("");
+  const [authUser, setAuthUser] = useState(""); // User name
+  const [authUserData, setAuthUserData] = useState({}); // Contains token retrieved after user authentication, used to check license status
   const [lockUI, setLockUI] = useState(true); // State to lock or unlock UI
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -88,7 +87,9 @@ export default function App() {
 
   async function loadConfig() {
     var config = JSON.parse(localStorage.getItem("configaws"));
-    setConfigAWS(config);
+    //setConfigAWS(config);
+    //setConfigValid(true);
+    configureAWS(config);
   }
 
   async function saveConfig(config) {
@@ -103,14 +104,14 @@ export default function App() {
         "AWS configuration is not valid. Please check settings and try again."
       );
       setConfigAWS({
-        "bucket": "",
-        "accessKey": "",
-        "secretKey": "",
+        bucket: "",
+        accessKey: "",
+        secretKey: "",
       });
       setConfigValid(false);
     } else {
       //setConfigAWS(config);
-      saveConfig(config)
+      saveConfig(config);
       setConfigValid(true);
       setGetArchive(true); // Load archive
       openNotification("AWS configuration is valid.");
@@ -160,6 +161,52 @@ export default function App() {
       setArchiveMeta(archiveObjArray);
     }
     setGetArchive(false);
+  }
+
+  // Validate user license
+  async function checkLicense() {
+    console.log(authUserData)
+    if (Object.keys(authUserData).length === 0) {
+      openNotification(
+        "This action cannot be completed. The license token was not found."
+      );
+      return false;
+    } else {
+      const [dataLicense, errorsLicense] = await fetchLicense(
+        authUserData.attributes.token
+      );
+      if (errorsLicense) {
+        openNotification(
+          "This action cannot be completed. There was an error retrieving the license."
+        );
+        return false;
+      } else if (dataLicense.length === 1) {
+        // If true then a license was found
+        const [
+          metaValidate,
+          dataValidate,
+          errorsValidate,
+        ] = await validateLicense(
+          authUserData.attributes.token,
+          dataLicense[0].id
+        );
+
+        if (metaValidate.constant === "VALID") {
+          //openNotification("License is good.");
+          return true;
+        } else {
+          openNotification(
+            "This action cannot be completed. There was an error validating the license."
+          );
+          return false;
+        }
+      } else {
+        openNotification(
+          "This action cannot be completed. No license was found."
+        );
+        return false;
+      }
+    }
   }
 
   // Handle data upload
@@ -238,7 +285,10 @@ export default function App() {
       };
 
       getData(params); // Start transfer for the file
-    } else if (downloadState === true && downloadCount === downloadList.length) {
+    } else if (
+      downloadState === true &&
+      downloadCount === downloadList.length
+    ) {
       setDownloadState(false);
       setDownloadList([]); // Clear current list
       setDownloadParams({});
@@ -265,6 +315,7 @@ export default function App() {
                   <Login
                     setauth={setAuth}
                     setauthuser={setAuthUser}
+                    setauthuserdata={setAuthUserData}
                     setconfigaws={setConfigAWS}
                     configaws={configAWS}
                     setconfigvalid={setConfigValid}
@@ -288,11 +339,10 @@ export default function App() {
       ) : (
         <Layout>
           <Layout.Sider theme="dark" width={60}>
-            <Row justify="space-around" gutter={[8, 64]}>
-              <Col></Col>
-            </Row>
+            <Row justify="space-around" gutter={[8, 18]}>
+              <Col span={24}></Col>
+              <Col span={24}></Col>
 
-            <Row justify="space-around" gutter={[8, 24]}>
               <Col>
                 <Link to="/archive">
                   <Popover content={"Data Archive"} placement="right">
@@ -305,9 +355,7 @@ export default function App() {
                   </Popover>
                 </Link>
               </Col>
-            </Row>
 
-            <Row justify="space-around" gutter={[8, 24]}>
               <Col>
                 <Link to="/upload">
                   <Popover content={"Upload Data"} placement="right">
@@ -321,9 +369,7 @@ export default function App() {
                   </Popover>
                 </Link>
               </Col>
-            </Row>
 
-            <Row justify="space-around" gutter={[8, 24]}>
               <Col>
                 <Popover content={"Settings"} placement="right">
                   <Button
@@ -335,9 +381,6 @@ export default function App() {
                   ></Button>
                 </Popover>
               </Col>
-            </Row>
-
-            <Row justify="space-around" gutter={[8, 24]}>
               <Col>
                 <Popover content={"Logout"} placement="right">
                   <Button
@@ -349,8 +392,8 @@ export default function App() {
                     onClick={() => {
                       setAuth(false);
                       history.push("/login");
-                      setArchiveMeta([]) // Clear metadata archive in state
-                      localStorage.removeItem('archivemeta') // Clear metadata archive in local storage
+                      setArchiveMeta([]); // Clear metadata archive in state
+                      localStorage.removeItem("archivemeta"); // Clear metadata archive in local storage
                       openNotification("Logged out.");
                     }}
                   ></Button>
@@ -394,6 +437,7 @@ export default function App() {
                     downloadlist={downloadList}
                     setdownloadlist={setDownloadList}
                     metadata={metaData}
+                    checklicense={checkLicense}
                   />
                 </Route>
                 <Route exact path={"/upload"}>
@@ -415,6 +459,7 @@ export default function App() {
                     setuploadcount={setUploadCount}
                     uitoggle={uiToggle}
                     setuitoggle={setUiToggle}
+                    checklicense={checkLicense}
                   />
                 </Route>
                 <Redirect from={"/login"} to="/archive" exact />

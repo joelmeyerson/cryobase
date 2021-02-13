@@ -10,8 +10,9 @@
   height: 100vh;
   bottom: 0;
   position: sticky;
-  background-color: #ffe58f;
+  background-color: #d6e4ff;
 }
+/* background-color: #ffe58f; */
 
 /* FOOTER */
 /* footer.ant-layout-footer {

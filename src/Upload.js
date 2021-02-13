@@ -54,31 +54,30 @@ export default function Upload(props) {
       form.resetFields();
       props.setfilelist([]);
       props.setuploadpathname({
-        "path": "",
+        path: "",
       });
     }
   }, [props.uploadstate]);
-
 
   // When component loads populuate form with current metadata
   useEffect(() => {
     if (props.uploadcount !== 0) {
       form.setFieldsValue({
-        "apix": props.metadata.apix,
-        "camera": props.metadata.camera,
-        "cs": props.metadata.cs,
-        "dataset": props.metadata.dataset,
-        "date": moment(props.metadata.date, "YYYY-MM-DD"),
-        "description": props.metadata.description,
-        "dose": props.metadata.dose,
-        "exposuretime": props.metadata.exposuretime,
-        "filter": props.metadata.filter,
-        "frames": props.metadata.frames,
-        "mag": props.metadata.mag,
-        "microscope": props.metadata.microscope,
+        apix: props.metadata.apix,
+        camera: props.metadata.camera,
+        cs: props.metadata.cs,
+        dataset: props.metadata.dataset,
+        date: moment(props.metadata.date, "YYYY-MM-DD"),
+        description: props.metadata.description,
+        dose: props.metadata.dose,
+        exposuretime: props.metadata.exposuretime,
+        filter: props.metadata.filter,
+        frames: props.metadata.frames,
+        mag: props.metadata.mag,
+        microscope: props.metadata.microscope,
         // "path" handled in a different useEffect
-        "storage": props.metadata.storage,
-        "voltage": props.metadata.voltage,
+        storage: props.metadata.storage,
+        voltage: props.metadata.voltage,
       });
     }
   }, []);
@@ -148,40 +147,43 @@ export default function Upload(props) {
 
   // Handle form completion
   async function onFinish(formvals) {
-    const date = new Date().getDate(); //Current date
-    const month = new Date().getMonth() + 1; //Current month
-    const year = new Date().getFullYear(); //Current year
-    const hours = new Date().getHours(); //Current hours
-    const min = new Date().getMinutes(); //Current minutes
-    const sec = new Date().getSeconds(); //Current seconds
-    const time =
-      year + "-" + month + "-" + date + "-" + hours + "-" + min + "-" + sec;
+    var license = await props.checklicense();
+    if (license === true) {
+      const date = new Date().getDate(); //Current date
+      const month = new Date().getMonth() + 1; //Current month
+      const year = new Date().getFullYear(); //Current year
+      const hours = new Date().getHours(); //Current hours
+      const min = new Date().getMinutes(); //Current minutes
+      const sec = new Date().getSeconds(); //Current seconds
+      const time =
+        year + "-" + month + "-" + date + "-" + hours + "-" + min + "-" + sec;
 
-    // Update metadata state with form values
-    props.setmetadata({
-      apix: formvals.apix,
-      camera: formvals.camera,
-      cs: formvals.cs,
-      dataid: formvals.dataset.concat("-" + time), // Create session ID from timestamp and dataset name
-      dataset: formvals.dataset,
-      date: formvals.date.format("YYYY-MM-DD"),
-      description: formvals.description,
-      dose: formvals.dose,
-      exposuretime: formvals.exposuretime,
-      filecount: props.filelist.length,
-      filter: formvals.filter,
-      frames: formvals.frames,
-      mag: formvals.mag,
-      microscope: formvals.microscope,
-      path: formvals.path,
-      status: formvals.storage === "STANDARD" ? "standard" : "archived",
-      storage: formvals.storage,
-      timestamp: time,
-      uploadcompleted: false,
-      voltage: formvals.voltage,
-    });
-    props.setuploadstate(true);
-    props.setuitoggle(true);
+      // Update metadata state with form values
+      props.setmetadata({
+        apix: formvals.apix,
+        camera: formvals.camera,
+        cs: formvals.cs,
+        dataid: formvals.dataset.concat("-" + time), // Create session ID from timestamp and dataset name
+        dataset: formvals.dataset,
+        date: formvals.date.format("YYYY-MM-DD"),
+        description: formvals.description,
+        dose: formvals.dose,
+        exposuretime: formvals.exposuretime,
+        filecount: props.filelist.length,
+        filter: formvals.filter,
+        frames: formvals.frames,
+        mag: formvals.mag,
+        microscope: formvals.microscope,
+        path: formvals.path,
+        status: formvals.storage === "STANDARD" ? "standard" : "archived",
+        storage: formvals.storage,
+        timestamp: time,
+        uploadcompleted: false,
+        voltage: formvals.voltage,
+      });
+      props.setuploadstate(true);
+      props.setuitoggle(true);
+    }
   }
 
   async function stopUpload() {
@@ -189,7 +191,13 @@ export default function Upload(props) {
   }
 
   return (
-    <Card className="archive-card" size="small" id="session" title="Upload Data" bordered={true}>
+    <Card
+      className="archive-card"
+      size="small"
+      id="session"
+      title="Upload Data"
+      bordered={true}
+    >
       <Row justify="space-around" align="top">
         <Col span={10}>
           <Form
@@ -219,7 +227,13 @@ export default function Upload(props) {
                 value={props.uploadpathname.path}
                 onKeyDown={(e) => e.preventDefault()}
                 addonAfter={
-                  <span onClick={props.lockui === true || props.uitoggle === true ? null : choosePath}>
+                  <span
+                    onClick={
+                      props.lockui === true || props.uitoggle === true
+                        ? null
+                        : choosePath
+                    }
+                  >
                     <FolderOutlined />
                   </span>
                 }
@@ -231,7 +245,7 @@ export default function Upload(props) {
               name="dataset"
               valuePropName="value"
               rules={[
-                { required: "true", message: "Required field."},
+                { required: "true", message: "Required field." },
                 {
                   pattern: /^[a-zA-Z0-9-]+$/,
                   message: "Letters, numbers, and dashes only.",
@@ -492,8 +506,8 @@ export default function Upload(props) {
                     Start Upload
                   </Button>
                 </Form.Item>
-                </Col>
-                <Col>
+              </Col>
+              <Col>
                 <Form.Item>
                   <Button
                     disabled={!props.uitoggle}
@@ -505,8 +519,8 @@ export default function Upload(props) {
                     Stop Upload
                   </Button>
                 </Form.Item>
-                </Col>
-                <Col>
+              </Col>
+              <Col>
                 <Form.Item>
                   <Button
                     disabled={props.uitoggle}
@@ -516,7 +530,7 @@ export default function Upload(props) {
                       props.setuploadcount(0); // Reset transfer count
                       props.setfilelist([]);
                       props.setuploadpathname({
-                        "path": "",
+                        path: "",
                       });
                     }}
                   >
@@ -590,8 +604,9 @@ export default function Upload(props) {
               props.uploadcount < props.filelist.length ? (
                 <div>
                   {" "}
-                  <LoadingOutlined /> {" "}
-                  {props.filelist[props.uploadcount].name}{" "}
+                  <LoadingOutlined /> {
+                    props.filelist[props.uploadcount].name
+                  }{" "}
                 </div>
               ) : (
                 ""

@@ -1,16 +1,16 @@
-## Starting prototype
+## CryoBase details
 
-### `npm run start`
-Launches server at localhost:3000
+CryoBase was made with Create React App, Electron, and Electron Builder. AntD framework used for UI.
 
-### `npm run electron-start`
-Launches Electron displaying localhost:3000
+## Quick overview of running and building
 
-/////////////////////////////////////////////////////////////////////////////////////
+Download the git repo and install the dependencies running `yarn` or `npm install`. The following assumes NPM is used but Yarn commands can be used instead. Use `npm start` or `yarn start` to start the React web server, then in a separate shell run `npm run electron-start` or `yarn electron-start` to open the Electron app with debut console enabled. To build the package run `yarn dist` to generate the dist folder which contains the app.
+
+NOTE: The electron-builder tool which is run with `yarn dist` will minify all code in the /src folder. However, main.js and preload.js cannot reside in /src and thus are not minified. As a workaround, main.js and preload.js should be manually minified using the Babel minify tool. The script minify-script.sh contains the command to do this. The minified versions should replace the original main.js and preload.js before building.
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Available Scripts
+## Available Scripts from Create React App
 
 In the project directory, you can run:
 
@@ -76,3 +76,13 @@ This section has moved here: https://facebook.github.io/create-react-app/docs/de
 ### `npm run build` fails to minify
 
 This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+
+### Electron Builder scripts
+
+### `npm run pack`
+
+You can run yarn pack (only generates the package directory without really packaging it. This is useful for testing purposes).
+
+### `npm run dist`
+
+You can run yarn dist (to package in a distributable format (e.g. dmg, windows installer, deb package))

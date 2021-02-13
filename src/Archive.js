@@ -369,10 +369,13 @@ export default function Archive(props) {
 
   // Download dataset
   async function downloadData(params) {
-    var keylist = await window.electron.listkeys(params); // Get list of files to be downloaded
-    props.setdownloadlist(keylist);
-    props.setdownloadparams(params);
-    props.setdownloadstate(true);
+    var license = await props.checklicense();
+    if (license === true) {
+      var keylist = await window.electron.listkeys(params); // Get list of files to be downloaded
+      props.setdownloadlist(keylist);
+      props.setdownloadparams(params);
+      props.setdownloadstate(true);
+    }
   }
 
   return (
@@ -425,7 +428,7 @@ export default function Archive(props) {
             addonAfter={
               <span
                 onClick={
-                  props.lockui === true || props.uitoggle === true
+                  props.lockui === true || props.uitoggle === true || props.downloadstate === true
                     ? null
                     : choosePath
                 }

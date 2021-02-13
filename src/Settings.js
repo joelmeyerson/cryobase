@@ -42,20 +42,20 @@ export default function Settings(props) {
       <Row>
         <Col>
           <span>
-            Version: <Tag>1.0.b</Tag>
+            <Tag>Version: 1.0.0</Tag>
           </span>
           <br></br>
           <span>
-            User: <Tag>{props.authuser}</Tag>
+            <Tag>User: {props.authuser}</Tag>
           </span>
           <br></br>
           {props.auth === true ? (
             <span>
-              License: <Tag color="green">VALID</Tag>
+              <Tag color="green">License: VALID</Tag>
             </span>
           ) : (
             <span>
-              License: <Tag color="red">INVALID</Tag>
+              <Tag color="red">License: INVALID</Tag>
             </span>
           )}
         </Col>
