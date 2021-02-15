@@ -298,7 +298,8 @@ export default function Archive(props) {
 
   // Custom table loading indicator
   const customLoading = {
-    spinning: props.getarchive || props.buttonloading,
+    //spinning: props.getarchive || props.buttonloading,
+    spinning: props.getarchive,
     indicator: (
       <div style={{ fontSize: "20px" }}>
         <LoadingOutlined />

@@ -102,7 +102,9 @@ function createWindow() {
   ipcMain.handle("configureaws", async (event, arg) => {
     bucket = arg.bucket;
     AWS.config.accessKeyId = arg.accessKey;
+    process.env['AWS_ACCESS_KEY_ID'] = arg.accessKey;
     AWS.config.secretAccessKey = arg.secretKey;
+    process.env['AWS_SECRET_ACCESS_KEY'] = arg.secretKey;
     var params = {
       Bucket: bucket,
       MaxKeys: 1,
