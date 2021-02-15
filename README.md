@@ -1,16 +1,28 @@
-## CryoBase details
-
 CryoBase was made with Create React App, Electron, and Electron Builder. AntD framework used for UI.
 
 ## Quick overview of running and building
 
-Download the git repo and install the dependencies running `yarn` or `npm install`. The following assumes NPM is used but Yarn commands can be used instead. Use `npm start` or `yarn start` to start the React web server, then in a separate shell run `npm run electron-start` or `yarn electron-start` to open the Electron app with debut console enabled. To build the package run `yarn dist` to generate the dist folder which contains the app.
+Download the git repo and install the dependencies.
+`yarn` or `npm install`
 
-NOTE: The electron-builder tool which is run with `yarn dist` will minify all code in the /src folder. However, main.js and preload.js cannot reside in /src and thus are not minified. As a workaround, main.js and preload.js should be manually minified using the Babel minify tool. The script minify-script.sh contains the command to do this. The minified versions should replace the original main.js and preload.js before building.
+Start the React web server.
+`yarn start` or `npm start`
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+In a separate shell start Electron.
+`yarn electron-start` or `npm run electron-start`
+
+Build the package. Best to first close the React server and Electron first.
+`yarn electron-pack` or `npm run electron-pack`
+
+## Technical notes
+Electron Builder prefers to have the main JS file named as `electron.js` so should not use `main.js`.
+
+Electron Builder only does minification for files in `/src` and thus will not minify `electron.js` or `preload.js` which reside in `/public`. As a workaround the `prebuild.sh` script is before the app is packaged, and the `postbuild.sh` script is run after packaging. This script requires the `yarn dist` and `yarn dist` directories which are in the main project folder. Both scripts are automatically run when running `yarn electron-pack` or `npm run electron-pack`.
+
+This repository was helpful for getting Electron Builder to properly package the app: https://github.com/rgfindl/electron-cra-boilerplate
 
 ## Available Scripts from Create React App
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 In the project directory, you can run:
 
