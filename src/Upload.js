@@ -583,7 +583,6 @@ export default function Upload(props) {
               <Progress
                 type="line"
                 strokeColor={"geekblue-4"}
-                status="active"
                 percent={
                   props.uploadstate === false
                     ? 0

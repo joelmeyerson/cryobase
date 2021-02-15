@@ -298,7 +298,7 @@ export default function Archive(props) {
 
   // Custom table loading indicator
   const customLoading = {
-    spinning: props.getarchive,
+    spinning: props.getarchive || props.buttonloading,
     indicator: (
       <div style={{ fontSize: "20px" }}>
         <LoadingOutlined />
@@ -428,7 +428,9 @@ export default function Archive(props) {
             addonAfter={
               <span
                 onClick={
-                  props.lockui === true || props.uitoggle === true || props.downloadstate === true
+                  props.lockui === true ||
+                  props.uitoggle === true ||
+                  props.downloadstate === true
                     ? null
                     : choosePath
                 }

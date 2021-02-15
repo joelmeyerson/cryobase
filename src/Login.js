@@ -34,8 +34,6 @@ export default function Login(props) {
         localStorage.setItem("user", JSON.stringify(authuser)); // Store the new user name
       }
     } else {
-      console.log("outside:",authuser);
-      console.log("else statement...");
       localStorage.setItem("user", JSON.stringify(authuser)); // Create a "user" in local storage since none exists
     }
   }

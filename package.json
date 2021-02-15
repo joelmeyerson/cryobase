@@ -1,54 +1,86 @@
 {
   "name": "CryoBase",
   "description": "Application for managing cryo-EM data on AWS S3.",
-  "author": "Joel Meyerson",
   "version": "1.0.0",
-  "main": "public/main.js",
+  "main": "public/electron.js",
   "homepage": "./",
   "private": true,
-  "dependencies": {
-    "@ant-design/icons": "^4.4.0",
-    "@testing-library/jest-dom": "^5.11.9",
-    "@testing-library/react": "^11.2.3",
-    "@testing-library/user-event": "^7.2.1",
-    "antd": "^4.10.3",
-    "aws-sdk": "^2.831.0",
-    "babel": "^6.23.0",
-    "fs-extra": "^9.1.0",
-    "js-cookie": "^2.2.1",
-    "moment": "^2.29.1",
-    "react": "^16.14.0",
-    "react-dom": "^16.14.0",
-    "react-moment": "^1.1.1",
-    "react-router-dom": "^5.2.0"
+  "author": {
+    "name": "Joel Meyerson",
+    "email": "jrmeyerson@gmail.com"
   },
-  "build": {
-    "appId": "com.cryobase.app",
-    "mac": {
-      "category": "public.app-category.utilities"
-    },
-    "extends": null,
-    "files": [
-      "public/**/*",
-      "build/**/*",
-      "node_modules/**/*"
-    ],
-    "directories": {
-      "buildResources": "icons"
-    }
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@ant-design/icons": "^4.5.0",
+    "@testing-library/jest-dom": "^5.11.4",
+    "@testing-library/react": "^11.1.0",
+    "@testing-library/user-event": "^12.1.10",
+    "antd": "^4.12.3",
+    "aws-sdk": "^2.843.0",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "react-router-dom": "^5.2.0",
+    "react-scripts": "^4.0.2",
+    "web-vitals": "^1.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron-start": "export NODE_ENV=development&&electron .",
+    "electron-start": "export NODE_ENV=development && electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "preelectron-pack": "bash prebuild.sh && yarn build",
+    "electron-pack": "electron-builder -ml  && bash postbuild.sh"
+  },
+  "build": {
+    "appId": "com.cryobase.app",
+    "productName": "CryoBase",
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "dmg": {
+      "background": null,
+      "backgroundColor": "#ffffff",
+      "window": {
+        "width": "400",
+        "height": "300"
+      },
+      "contents": [
+        {
+          "x": 110,
+          "y": 150
+        },
+        {
+          "x": 240,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    },
+    "files": [
+      "build/**/*",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    }
   },
   "eslintConfig": {
-    "extends": "react-app"
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   },
   "browserslist": {
     "production": [
@@ -63,14 +95,8 @@
     ]
   },
   "devDependencies": {
-    "@babel/cli": "^7.12.13",
-    "@babel/core": "^7.12.13",
-    "@babel/preset-react": "^7.12.13",
-    "babel-minify": "^0.5.1",
-    "electron": "^10.3.0",
+    "electron": "^11.2.3",
     "electron-builder": "^22.9.1",
-    "electron-reload": "^1.5.0",
-    "react-scripts": "^4.0.1",
-    "terser": "^5.6.0-beta"
+    "electron-reload": "^1.5.0"
   }
 }
