@@ -1,1 +1,524 @@
-const{app:app,session:session,BrowserWindow:BrowserWindow,Menu:Menu,dialog:dialog}=require("electron"),os=require("os"),path=require("path"),fs=require("fs"),fsp=require("fs").promises,electron=require("electron"),{ipcMain:ipcMain}=require("electron"),AWS=require("aws-sdk"),fse=require("fs-extra"),appName=app.getName(),s3=new AWS.S3;var bucket="";const env=process.env.NODE_ENV||"production";"development"===env&&require("electron-reload")(__dirname,{electron:require(__dirname+"/../node_modules/electron")});const isMac="darwin"===process.platform,template=[...isMac?[{label:app.name,submenu:[{role:"hide"},{role:"hideothers"},{role:"unhide"},{type:"separator"},{role:"quit"}]}]:[],{label:"File",submenu:[{role:"quit"}]},{label:"Edit",submenu:[{role:"undo"},{role:"redo"},{type:"separator"},{role:"cut"},{role:"copy"},{role:"paste"}]},{label:"Window",submenu:[{role:"minimize"},{role:"zoom"},...isMac?[{type:"separator"},{role:"front"},{type:"separator"},{role:"window"}]:[{role:"close"}]]}];if("production"===env){const e=Menu.buildFromTemplate(template);Menu.setApplicationMenu(e)}function createWindow(){const e=new BrowserWindow({width:1200,height:800,webPreferences:{worldSafeExecuteJavaScript:!0,preload:path.join(__dirname,"preload.js"),nodeIntegration:!1,contextIsolation:!0,webSecurity:!0}});async function t(e){return await s3.listObjectsV2(e).promise().then(e=>e.Contents.map((function(e){return e.Key}))).catch((function(e){return"error"}))}async function a(e,t,a){var s={Bucket:bucket,Key:"meta/"+e+".json"},r=(await s3.getObject(s).promise()).Body.toString("utf-8"),o=JSON.parse(r);o[t]=a;var n=JSON.stringify(o);const i={Bucket:bucket,Key:"meta/"+e+".json",Body:n,StorageClass:"STANDARD"},c=await s3.upload(i).promise().then(e=>"Metadata for key "+t+" updated to value "+a+" successfully.").catch(e=>(console.log(e,e.stack),"Metadata for "+t+" not updated successfully."));return console.log(c),c}ipcMain.handle("configureaws",async(e,a)=>{bucket=a.bucket,AWS.config.accessKeyId=a.accessKey,AWS.config.secretAccessKey=a.secretKey;var s={Bucket:bucket,MaxKeys:1};return await t(s)}),ipcMain.handle("selectdirectory",async(t,a)=>await dialog.showOpenDialog(e,{properties:["openDirectory"]}).then(e=>e.filePaths).catch(e=>{console.log(e)})),ipcMain.handle("listdirectory",async(e,t)=>{var a=[];!function e(t){fs.readdirSync(t).forEach(s=>{const r=path.join(t,s);return fs.statSync(r).isDirectory()?e(r):a.push(r)})}(t);var s=[];return a.forEach(e=>{s.push(e.replace(t+"/",""))}),s}),ipcMain.handle("senddata",async(e,t)=>{var a=t.file,s=t.path.concat("/",a),r=fs.readFileSync(s),o=t.dataid+"/"+a;const n={Bucket:bucket,Key:o,Body:r,StorageClass:t.storage};return await s3.upload(n).promise().then(e=>"File upload successful.").catch(e=>(console.log(e,e.stack),"File upload error."))}),ipcMain.handle("sendmetadata",async(e,t)=>{const a=JSON.stringify(t),s={Bucket:bucket,Key:"meta/"+t.dataid+".json",Body:a,StorageClass:"STANDARD"};return await s3.upload(s).promise().then(e=>"Metadata upload successful.").catch(e=>(console.log(e,e.stack),"Metadata upload error."))}),ipcMain.handle("getmetadata",async(e,a)=>{var s={Bucket:bucket,Prefix:"meta/",MaxKeys:1e6};const r=await t(s);for(var o=[],n={Bucket:bucket,Key:""},i=0;i<=r.length-1;i++){n.Key=r[i];var c=(await s3.getObject(n).promise()).Body.toString("utf-8");o.push(JSON.parse(c))}return o}),ipcMain.handle("listkeys",async(e,t)=>{var a={Bucket:bucket,Prefix:t.dataid,MaxKeys:1e6},s=await s3.listObjectsV2(a).promise(),r=[];return s.Contents.forEach((e,t)=>{r.push(e.Key)}),r}),ipcMain.handle("updatemeta",async(e,t)=>{var a={Bucket:bucket,Key:"meta/"+t.dataid+".json"},s=(await s3.getObject(a).promise()).Body.toString("utf-8"),r=JSON.parse(s);r[t.key]=t.val;var o=JSON.stringify(r);const n={Bucket:bucket,Key:"meta/"+t.dataid+".json",Body:o,StorageClass:"STANDARD"},i=await s3.upload(n).promise().then(e=>"Metadata for key "+t.key+" updated to value "+t.val+" successfully.").catch(e=>(console.log(e,e.stack),"Metadata for "+t.key+" not updated successfully."));return console.log(i),i}),ipcMain.handle("restoredata",async(e,s)=>{var r={status:s.status,statusnotification:""},o={Bucket:bucket,Prefix:s.dataid,MaxKeys:1e6};const n=await t(o);switch(s.status){case"archived":for(var i=0;i<n.length;i++){var c={Bucket:bucket,Key:n[i],RestoreRequest:{Days:3,GlacierJobParameters:{Tier:"Standard"}}};await s3.restoreObject(c).promise()}await a(s.dataid,"status","restoring"),r.status="restoring",r.statusnotification="Data is now being restored for download.";break;case"restoring":var l=[],u=!0;for(i=0;i<n.length;i++){var d={Bucket:bucket,Key:n[i]},p=await s3.headObject(d).promise();if(l.push({Key:n[i],Restore:p.Restore}),p.Restore.includes("true")){u=!1;break}p.Restore.includes("false")&&1}!0===u?(await a(s.dataid,"status","restored"),r.status="restored",r.statusnotification="Data has been restored and is available for download."):!1===u&&(r.statusnotification="Data restoration is still in progress. Restoration will complete about 12 hours after the job was started.");break;case"restored":case"archiving":l=[];var h=!0,y=0;for(i=0;i<n.length;i++){d={Bucket:bucket,Key:n[i]},p=await s3.headObject(d).promise();l.push({Key:n[i],Restore:p.Restore}),void 0===p.Restore?h=!1:p.Restore.includes("false")&&(y+=1)}if(!0===h){var f=l[l.length-1].Restore.split(",")[2].replace('"',"");r.statusnotification="Restored data is currently available for download. Data will return to Archived status on or around "+f+"."}else!1===h&&0===y?(await a(s.dataid,"status","archived"),r.status="archived",r.statusnotification="Data has returned to Archived status."):!1===h&&y>0&&(await a(s.dataid,"status","archiving"),r.status="archiving",r.statusnotification="Data is in the process of returning to Archived status. When this process completes data can be restored again.");break;default:console.log("There was an error and data status does not match any case in switch.")}return r}),ipcMain.handle("getdata",async(e,t)=>{for(var a=t.key.split("/"),s=a[a.length-1],r=a.length-1,o="",n=3;n<=r;n++){var i=a[n];if(i===s)break;fs.existsSync(t.downloadpath+"/"+o+i)||fs.mkdirSync(t.downloadpath+"/"+o+i),o=o+i+"/"}var c=await s3.getObject({Bucket:bucket,Key:t.key}).createReadStream(),l=await fs.createWriteStream(t.downloadpath+"/"+o+s);return c.pipe(l),null}),"development"===env?e.loadURL("http://localhost:3000"):e.loadURL("file://"+path.join(__dirname,"../build/index.html")),"development"===env&&e.webContents.openDevTools()}app.whenReady().then(()=>{createWindow(),app.on("activate",(function(){0===BrowserWindow.getAllWindows().length&&createWindow()}))}),app.on("window-all-closed",(function(){app.quit()}));
+// Modules to control application life and create native browser window
+const { app, session, BrowserWindow, Menu, dialog } = require("electron");
+const os = require("os");
+const path = require("path");
+const fs = require("fs");
+const fsp = require("fs").promises;
+
+const electron = require("electron");
+const { ipcMain } = require("electron");
+const AWS = require("aws-sdk");
+const fse = require("fs-extra");
+const appName = app.getName();
+
+const s3 = new AWS.S3();
+var bucket = "";
+
+const env = process.env.NODE_ENV || "production";
+
+if (env === "development") {
+  // Enable live reload for Electron too
+  require("electron-reload")(__dirname, {
+    // Note that the path to electron may vary according to the main file
+    electron: require(`${__dirname}/../node_modules/electron`),
+  });
+}
+
+// Set up app menu
+const isMac = process.platform === "darwin";
+
+const template = [
+  // { role: 'appMenu' }
+  ...(isMac
+    ? [
+        {
+          label: app.name,
+          submenu: [
+            { role: "hide" },
+            { role: "hideothers" },
+            { role: "unhide" },
+            { type: "separator" },
+            { role: "quit" },
+          ],
+        },
+      ]
+    : []),
+  // { role: 'fileMenu' }
+  {
+    label: "File",
+    submenu: [{ role: "quit" }],
+  },
+  // { role: 'editMenu' }
+  {
+    label: "Edit",
+    submenu: [
+      { role: "undo" },
+      { role: "redo" },
+      { type: "separator" },
+      { role: "cut" },
+      { role: "copy" },
+      { role: "paste" },
+    ],
+  },
+  // { role: 'windowMenu' }
+  {
+    label: "Window",
+    submenu: [
+      { role: "minimize" },
+      { role: "zoom" },
+      ...(isMac
+        ? [
+            { type: "separator" },
+            { role: "front" },
+            { type: "separator" },
+            { role: "window" },
+          ]
+        : [{ role: "close" }]),
+    ],
+  },
+];
+
+// Custom menu for production only
+if (env === "production") {
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
+function createWindow() {
+  // Create the browser window.
+  const mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      worldSafeExecuteJavaScript: true,
+      preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
+      webSecurity: true,
+    },
+  });
+
+  // Handle path selection through file browser (call from preload.js)
+  ipcMain.handle("configureaws", async (event, arg) => {
+    bucket = arg.bucket;
+    AWS.config.accessKeyId = arg.accessKey;
+    AWS.config.secretAccessKey = arg.secretKey;
+    var params = {
+      Bucket: bucket,
+      MaxKeys: 1,
+    };
+    const validateconfig = await listKeys(params);
+    return validateconfig;
+  });
+
+  // Handle path selection through file browser (call from preload.js)
+  ipcMain.handle("selectdirectory", async (event, arg) => {
+    const path = await dialog
+      .showOpenDialog(mainWindow, { properties: ["openDirectory"] })
+      .then((result) => {
+        return result.filePaths;
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+    return path;
+  });
+
+  // Handle local data path listing (call from preload.js)
+  ipcMain.handle("listdirectory", async (event, arg) => {
+    // Get file names in main dir, and sub-directories with files
+    var files = [];
+    function throughDirectory(dir) {
+      fs.readdirSync(dir).forEach((file) => {
+        const absolute = path.join(dir, file);
+        if (fs.statSync(absolute).isDirectory())
+          return throughDirectory(absolute);
+        else return files.push(absolute);
+      });
+    }
+    throughDirectory(arg); // Call function
+    var fileNames = [];
+    files.forEach((file) => {
+      fileNames.push(file.replace(arg + "/", "")); // Remove base directory name from each path
+    });
+    return fileNames;
+  });
+
+  // Upload data (call from preload.js)
+  ipcMain.handle("senddata", async (event, arg) => {
+    var file = arg.file;
+    var targetfile = arg.path.concat("/", file); // Target file for transfer
+    var filecontent = fs.readFileSync(targetfile); // Store file
+    var keyname = arg.dataid + "/" + file; // Object location inside bucket
+    const params = {
+      Bucket: bucket,
+      Key: keyname,
+      Body: filecontent,
+      StorageClass: arg.storage,
+    };
+    var status = await s3
+      .upload(params)
+      .promise()
+      .then((data) => {
+        return "File upload successful.";
+      })
+      .catch((err) => {
+        console.log(err, err.stack); // Error occurred
+        return "File upload error.";
+      });
+    return status;
+  });
+
+  // Upload metadata (call from preload.js)
+  ipcMain.handle("sendmetadata", async (event, arg) => {
+    const metadata = JSON.stringify(arg);
+    const params = {
+      Bucket: bucket,
+      Key: "meta/" + arg.dataid + ".json",
+      Body: metadata,
+      StorageClass: "STANDARD", // Store in Standard storage for easy retrieval
+    };
+    var status = await s3
+      .upload(params)
+      .promise()
+      .then((data) => {
+        return "Metadata upload successful.";
+      })
+      .catch((err) => {
+        console.log(err, err.stack); // Error occurred
+        return "Metadata upload error.";
+      });
+    return status;
+  });
+
+  // Fetch meta data
+  ipcMain.handle("getmetadata", async (event, arg) => {
+    var params = {
+      Bucket: bucket,
+      Prefix: "meta/", // Form path to metadata folder
+      MaxKeys: 1000000,
+    };
+
+    // Get list of metadata keys (i.e. each key is a path to a json file)
+    const metalist = await listKeys(params);
+    var archive = [];
+    var downloadparams = {
+      Bucket: bucket,
+      Key: "",
+    };
+    for (var i = 0; i <= metalist.length - 1; i++) {
+      // Download each json file in list and store in new array of objects
+      downloadparams.Key = metalist[i];
+      var stream = await s3.getObject(downloadparams).promise();
+      var json = stream.Body.toString("utf-8");
+      archive.push(JSON.parse(json));
+    }
+    return archive;
+  });
+
+  // Function to list keys from input params (called locally)
+  async function listKeys(params) {
+    const list = await s3
+      .listObjectsV2(params)
+      .promise()
+      .then((data) => {
+        var keys = data.Contents.map(function (el) {
+          return el.Key;
+        });
+        return keys;
+      })
+      .catch(function (err) {
+        return "error";
+      });
+    return list;
+  }
+
+  // List all keys matching input base key string (callable from renderer processes)
+  ipcMain.handle("listkeys", async (event, arg) => {
+    var listparams = {
+      Bucket: bucket,
+      Prefix: arg.dataid,
+      MaxKeys: 1000000,
+    };
+    var objectList = await s3.listObjectsV2(listparams).promise();
+    var keylist = [];
+    objectList.Contents.forEach((item, i) => {
+      keylist.push(item.Key);
+    });
+    return keylist;
+  });
+
+  // Function to update a key/val pair in metadata
+  async function updateMeta(dataid, key, val) {
+    var downloadparams = {
+      Bucket: bucket,
+      Key: "meta/" + dataid + ".json",
+    };
+    var stream = await s3.getObject(downloadparams).promise(); //Download metadata for target dataset
+    var json = stream.Body.toString("utf-8");
+    var metadata = JSON.parse(json);
+    metadata[key] = val; // Update key with val
+    var newjson = JSON.stringify(metadata); // Upload the new meta
+    const uploadparams = {
+      Bucket: bucket,
+      Key: "meta/" + dataid + ".json",
+      Body: newjson,
+      StorageClass: "STANDARD", // Store in Standard storage for easy retrieval
+    };
+    const status = await s3
+      .upload(uploadparams)
+      .promise()
+      .then((data) => {
+        return (
+          "Metadata for key " +
+          key +
+          " updated to value " +
+          val +
+          " successfully."
+        );
+      })
+      .catch((err) => {
+        console.log(err, err.stack); // Error occurred
+        return "Metadata for " + key + " not updated successfully.";
+      });
+    console.log(status);
+    return status;
+  }
+
+  // Update key/value pair in metadata (callable from renderer processes)
+  ipcMain.handle("updatemeta", async (event, arg) => {
+    var downloadparams = {
+      Bucket: bucket,
+      Key: "meta/" + arg.dataid + ".json",
+    };
+    var stream = await s3.getObject(downloadparams).promise(); //Download metadata for target dataset
+    var json = stream.Body.toString("utf-8");
+    var metadata = JSON.parse(json);
+    metadata[arg.key] = arg.val; // Update key with val
+
+    var newjson = JSON.stringify(metadata); // Upload the new meta
+    const uploadparams = {
+      Bucket: bucket,
+      Key: "meta/" + arg.dataid + ".json",
+      Body: newjson,
+      StorageClass: "STANDARD", // Store in Standard storage for easy retrieval
+    };
+    const status = await s3
+      .upload(uploadparams)
+      .promise()
+      .then((data) => {
+        return (
+          "Metadata for key " +
+          arg.key +
+          " updated to value " +
+          arg.val +
+          " successfully."
+        );
+      })
+      .catch((err) => {
+        console.log(err, err.stack); // Error occurred
+        return "Metadata for " + arg.key + " not updated successfully.";
+      });
+    console.log(status);
+    return status;
+  });
+
+  // Handle restore of Glacier Deep Archive dataset, and handle status check on restore
+  ipcMain.handle("restoredata", async (event, arg) => {
+    // Function return. Stores a notification to display to user.
+    var returnstatus = {
+      status: arg.status, // Return original status, or an updated status if needed
+      statusnotification: "",
+    };
+
+    // Get list of all objects in target dataset
+    var listparams = {
+      Bucket: bucket,
+      Prefix: arg.dataid,
+      MaxKeys: 1000000,
+    };
+    const objectlist = await listKeys(listparams);
+    switch (arg.status) {
+      case "archived":
+        for (var i = 0; i < objectlist.length; i++) {
+          var restoreparams = {
+            Bucket: bucket,
+            Key: objectlist[i],
+            RestoreRequest: {
+              Days: 3, // Duration of restored data
+              GlacierJobParameters: {
+                Tier: "Standard", // Sets the speed of recovery. "Bulk" is cheaper than "Standard"
+              },
+            },
+          };
+          await s3.restoreObject(restoreparams).promise(); // Start restoring the target key
+        }
+        await updateMeta(arg.dataid, "status", "restoring");
+        returnstatus.status = "restoring";
+        returnstatus.statusnotification =
+          "Data is now being restored for download.";
+        break;
+
+      case "restoring":
+        var headerlist = []; // Get the restore status for each key in dataset
+        var restorecomplete = true;
+        var restorecount = 0;
+        for (var i = 0; i < objectlist.length; i++) {
+          var headparams = {
+            Bucket: bucket,
+            Key: objectlist[i],
+          };
+          var header = await s3.headObject(headparams).promise();
+          headerlist.push({
+            Key: objectlist[i], // Key string
+            Restore: header.Restore, // Restore status
+          });
+
+          // Example entry if key restore in progress: Restore: 'ongoing-request="true"',
+          // Example entry if key restore complete: Restore: 'ongoing-request="false", expiry-date="Fri, 31 Dec 1999 00:00:00 GMT"',
+          if (header.Restore.includes("true")) {
+            restorecomplete = false;
+            break; // If any instance of "true" found in the header then restore is incomplete and break from loop
+          } else if (header.Restore.includes("false")) {
+            restorecount = restorecount + 1; // Keep count of keys that have been restored so far
+          }
+        }
+        if (restorecomplete === true) {
+          // If entire dataset is restored
+          await updateMeta(arg.dataid, "status", "restored"); // Update status property of metadata JSON
+          returnstatus.status = "restored";
+          returnstatus.statusnotification =
+            "Data has been restored and is available for download.";
+        } else if (restorecomplete === false) {
+          returnstatus.statusnotification =
+            "Data restoration is still in progress. Restoration will complete about 12 hours after the job was started.";
+        }
+        break;
+      case "restored": // Fall through to next case
+      case "archiving":
+        var headerlist = []; // Get the restore status for each key in dataset
+        var restoreintact = true;
+        var intactcount = 0;
+        for (var i = 0; i < objectlist.length; i++) {
+          var headparams = {
+            Bucket: bucket,
+            Key: objectlist[i],
+          };
+          var header = await s3.headObject(headparams).promise();
+          headerlist.push({
+            Key: objectlist[i], // Key string
+            Restore: header.Restore, // Restore status
+          });
+          // Example entry if key restore complete: Restore: 'ongoing-request="false", expiry-date="Fri, 31 Dec 1999 00:00:00 GMT"',
+          // Example entry if key sent back to archive: "undefined"
+          if (typeof header.Restore === "undefined") {
+            // If any instance of "undefined" found in the header then data is all or partially back in archive
+            restoreintact = false;
+          } else if (header.Restore.includes("false")) {
+            intactcount = intactcount + 1; // Keep count of keys that remain intact
+          }
+        }
+        if (restoreintact === true) {
+          // If restore is intact then just report back expiry date
+          var lastkeyheader = headerlist[headerlist.length - 1].Restore; // Gives the header for the final key in the list sent for restoration.
+          var expiretime = lastkeyheader.split(",")[2].replace('"', ""); // Split the string to get just the date/time stamp, and remove the final character
+          returnstatus.statusnotification =
+            "Restored data is currently available for download. Data will return to Archived status on or around " +
+            expiretime +
+            ".";
+        } else if (restoreintact === false && intactcount === 0) {
+          // If restore is entirely unavailable then switch data back to "archived" status on dataset metadata
+          await updateMeta(arg.dataid, "status", "archived"); // Update status property of metadata JSON
+          returnstatus.status = "archived";
+          returnstatus.statusnotification =
+            "Data has returned to Archived status.";
+        } else if (restoreintact === false && intactcount > 0) {
+          await updateMeta(arg.dataid, "status", "archiving"); // Update status property of metadata JSON
+          returnstatus.status = "archiving";
+          returnstatus.statusnotification =
+            "Data is in the process of returning to Archived status. When this process completes data can be restored again.";
+        }
+        break;
+      default:
+        console.log(
+          "There was an error and data status does not match any case in switch."
+        );
+        break;
+    }
+    return returnstatus; // For displaying notification
+  });
+
+  // Download a dataset
+  ipcMain.handle("getdata", async (event, arg) => {
+    var splitkey = arg.key.split("/");
+    var filename = splitkey[splitkey.length - 1];
+
+    // Check for sub-directories in key
+    var startpos = 3; // Start after "user" and "userid" and "dataid"
+    var endpos = splitkey.length - 1; // End on last element in array
+    var path = "";
+
+    for (var i = startpos; i <= endpos; i++) {
+      var pathelement = splitkey[i];
+      //console.log(pathelement);
+      if (pathelement === filename) {
+        break;
+      } else if (!fs.existsSync(arg.downloadpath + "/" + path + pathelement)) {
+        //console.log("dir created");
+        //console.log(arg.downloadpath + path + pathelement)
+        fs.mkdirSync(arg.downloadpath + "/" + path + pathelement);
+        path = path + pathelement + "/";
+        //console.log(path);
+      } else {
+        path = path + pathelement + "/";
+        //console.log(path);
+      }
+    }
+
+    var stream = await s3
+      .getObject({
+        Bucket: bucket,
+        Key: arg.key,
+      })
+      .createReadStream();
+
+    var writestream = await fs.createWriteStream(
+      arg.downloadpath + "/" + path + filename
+    ); // Create writestream
+    stream.pipe(writestream); // Write the file to stream
+    return null;
+  });
+
+  if (env === "development") {
+    mainWindow.loadURL("http://localhost:3000");
+  } else {
+    mainWindow.loadURL(`file://${path.join(__dirname, "../build/index.html")}`);
+  }
+
+  if (env === "development") {
+    // Open the DevTools.
+    //BrowserWindow.addDevToolsExtension('<location to your react chrome extension>');
+    mainWindow.webContents.openDevTools();
+  }
+}
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.whenReady().then(() => {
+  createWindow();
+
+  app.on("activate", function () {
+    // On macOS it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+// Quit when all windows are closed, except on macOS. There, it's common
+// for applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q.
+app.on("window-all-closed", function () {
+  //if (process.platform !== "darwin") app.quit();
+  app.quit();
+});
