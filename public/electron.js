@@ -283,7 +283,7 @@ function createWindow() {
         console.log(err, err.stack); // Error occurred
         return "Metadata for " + key + " not updated successfully.";
       });
-    console.log(status);
+    //console.log(status);
     return status;
   }
 
@@ -321,7 +321,6 @@ function createWindow() {
         console.log(err, err.stack); // Error occurred
         return "Metadata for " + arg.key + " not updated successfully.";
       });
-    console.log(status);
     return status;
   });
 

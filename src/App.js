@@ -60,16 +60,45 @@ export default function App() {
   const [archiveMeta, setArchiveMeta] = useState([]); // Store metadata to display in Archive table
   const [buttonLoading, setButtonLoading] = useState(false); // Toggle button loading
 
+  const [selectedData, setSelectedData] = useState({
+    dataid: "",
+    status: "",
+    storage: "",
+  });
+  const [currentRowKey, setCurrentRowKey] = useState(null); // Used to story the key for currently selected table row
   const [downloadState, setDownloadState] = useState(false); // Set whether AWS file download active
   const [downloadConnect, setDownloadConnect] = useState(false); // Set whether AWS file download active
   const [downloadParams, setDownloadParams] = useState({}); // Store metadata to display in Archive table
   const [downloadCount, setDownloadCount] = useState(0); // Counter for file upload
   const [downloadList, setDownloadList] = useState([]); // Hold list of files for upload job
 
+  // const metaDataInit = {
+  //   // Used to initialize and reset metaData state
+  //   apix: "",
+  //   camera: "",
+  //   cs: "",
+  //   dataid: "",
+  //   dataset: "",
+  //   date: "",
+  //   description: "",
+  //   dose: "",
+  //   exposuretime: "",
+  //   filecount: "",
+  //   filter: "",
+  //   frames: "",
+  //   mag: "",
+  //   microscope: "",
+  //   path: "",
+  //   status: "",
+  //   storage: "",
+  //   timestamp: "",
+  //   uploadcompleted: "",
+  //   voltage: "",
+  // };
   const [uploadPathName, setUploadPathName] = useState({ path: "" });
   const [uploadTableLoading, setUploadTableLoading] = useState(false);
   const [fileList, setFileList] = useState([]); // Hold list of files for upload job
-  const [metaData, setMetaData] = useState({}); // Store metadata for upload job
+  const [metaData, setMetaData] = useState({});
   const [uploadState, setUploadState] = useState(false); // Set whether user has started upload job
   const [uploadAWS, setUploadAWS] = useState(false); // Set whether AWS file upload active
   const [uploadCount, setUploadCount] = useState(0); // Counter for file upload
@@ -165,7 +194,7 @@ export default function App() {
 
   // Validate user license
   async function checkLicense() {
-    console.log(authUserData)
+    //console.log(authUserData)
     if (Object.keys(authUserData).length === 0) {
       openNotification(
         "This action cannot be completed. The license token was not found."
@@ -237,16 +266,17 @@ export default function App() {
     setUploadAWS(false); // Set state after AWS transfer concludes
   }
   async function endUpload() {
-    setUploadState(false);
-    setUiToggle(false);
-    setUploadCount(0); // Reset transfer count
+    await setUiToggle(false);
+    await setUploadCount(0); // Reset transfer count
     await window.electron.updatemeta({
       dataid: metaData.dataid,
       key: "uploadcompleted",
       val: true,
     });
     await setGetArchive(true);
-    setMetaData({}); // Clear current metadata
+    await setMetaData({}); // Clear current metadata
+    await setUploadState(false);
+    openNotification("Upload complete.");
   }
   async function cancelUpload() {
     setUiToggle(false);
@@ -257,12 +287,13 @@ export default function App() {
     //   val: false,
     // });
     await setGetArchive(true);
-    setMetaData({}); // Clear current metadata
+    await setMetaData({}); // Clear current metadata
+    openNotification("Upload canceled.");
   }
 
   // Handle metadata upload
   useEffect(() => {
-    if (Object.keys(metaData).length !== 0) {
+    if (metaData.data !== "") {
       sendMetaData(metaData);
     }
   }, [metaData]);
@@ -283,16 +314,17 @@ export default function App() {
         dataid: downloadParams.dataid,
         downloadpath: downloadParams.localpath,
       };
-
       getData(params); // Start transfer for the file
     } else if (
       downloadState === true &&
       downloadCount === downloadList.length
     ) {
-      setDownloadState(false);
-      setDownloadList([]); // Clear current list
-      setDownloadParams({});
-      setDownloadCount(0);
+      endDownload();
+    } else if (
+      downloadState === false &&
+      Object.keys(downloadList).length !== 0
+    ) {
+      cancelDownload();
     }
   }, [downloadState, downloadConnect]);
 
@@ -301,6 +333,21 @@ export default function App() {
     await window.electron.getdata(params);
     setDownloadCount(downloadCount + 1); // Increment counter to track file index
     setDownloadConnect(false); // Set state after AWS transfer concludes
+  }
+
+  async function endDownload() {
+    setDownloadState(false);
+    setDownloadList([]); // Clear current list
+    setDownloadParams({});
+    setDownloadCount(0);
+    openNotification("Download complete.");
+  }
+
+  async function cancelDownload() {
+    setDownloadList([]); // Clear current list
+    setDownloadParams({});
+    setDownloadCount(0);
+    openNotification("Download canceled.");
   }
 
   return (
@@ -426,6 +473,10 @@ export default function App() {
                     setarchivemeta={setArchiveMeta}
                     buttonloading={buttonLoading}
                     setbuttonloading={setButtonLoading}
+                    currentrowkey={currentRowKey}
+                    setcurrentrowkey={setCurrentRowKey}
+                    selecteddata={selectedData}
+                    setselecteddata={setSelectedData}
                     downloadstate={downloadState}
                     setdownloadstate={setDownloadState}
                     downloadconnect={downloadConnect}

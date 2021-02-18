@@ -12,15 +12,10 @@ import {
   HistoryOutlined,
   CloseCircleOutlined,
   WarningTwoTone,
+  StopOutlined,
 } from "@ant-design/icons";
 
 export default function Archive(props) {
-  // Set up state
-  const [selectedData, setSelectedData] = useState({
-    dataid: "",
-    status: "",
-    storage: "",
-  });
   const [pathName, setPathName] = useState({ path: "" });
 
   const columns = [
@@ -171,12 +166,13 @@ export default function Archive(props) {
               placement="left"
             >
               <Button
-                disabled={selectedData.dataid !== record.dataid}
+                disabled={props.selecteddata.dataid !== record.dataid}
                 onClick={restoreDataset}
                 type="primary"
                 block
                 loading={
-                  props.buttonloading && selectedData.dataid === record.dataid
+                  props.buttonloading &&
+                  props.selecteddata.dataid === record.dataid
                 }
                 size="small"
                 icon={<WalletOutlined />}
@@ -195,12 +191,13 @@ export default function Archive(props) {
             >
               <Button
                 className={"status-btn"}
-                disabled={selectedData.dataid !== record.dataid}
+                disabled={props.selecteddata.dataid !== record.dataid}
                 onClick={restoreDataset}
                 type="primary"
                 block
                 loading={
-                  props.buttonloading && selectedData.dataid === record.dataid
+                  props.buttonloading &&
+                  props.selecteddata.dataid === record.dataid
                 }
                 size="small"
                 icon={<FieldTimeOutlined />}
@@ -219,12 +216,13 @@ export default function Archive(props) {
             >
               <Button
                 className={"status-btn"}
-                disabled={selectedData.dataid !== record.dataid}
+                disabled={props.selecteddata.dataid !== record.dataid}
                 onClick={restoreDataset}
                 type="primary"
                 block
                 loading={
-                  props.buttonloading && selectedData.dataid === record.dataid
+                  props.buttonloading &&
+                  props.selecteddata.dataid === record.dataid
                 }
                 size="small"
                 icon={<SwitcherOutlined />}
@@ -243,12 +241,13 @@ export default function Archive(props) {
             >
               <Button
                 className={"status-btn"}
-                disabled={selectedData.dataid !== record.dataid}
+                disabled={props.selecteddata.dataid !== record.dataid}
                 onClick={restoreDataset}
                 type="primary"
                 block
                 loading={
-                  props.buttonloading && selectedData.dataid === record.dataid
+                  props.buttonloading &&
+                  props.selecteddata.dataid === record.dataid
                 }
                 size="small"
                 icon={<HistoryOutlined />}
@@ -310,14 +309,22 @@ export default function Archive(props) {
   const rowSelection = {
     // rowSelection object indicates the need for row selection
     onChange: (selectedRowKeys, selectedRows) => {
-      var rowKey = selectedRowKeys[0];
-      var data = props.archivemeta;
-      setSelectedData({
-        dataid: data[rowKey - 1].dataid,
-        status: data[rowKey - 1].status,
-        storage: data[rowKey - 1].storage,
-        userid: selectedData.userid,
-      });
+      // If currently checking status of a dataset then prevent user from changing rows.
+      // This is implemented by just using the active row to override the attempt to change a row number.
+      if (props.buttonloading === true) {
+        selectedRowKeys[0] = props.currentrowkey;
+      // Otherwise just change the row.
+      } else {
+        var rowKey = selectedRowKeys[0]; // Store row key locally
+        props.setcurrentrowkey(rowKey); // Store row key in state
+        var data = props.archivemeta;
+        props.setselecteddata({
+          dataid: data[rowKey - 1].dataid,
+          status: data[rowKey - 1].status,
+          storage: data[rowKey - 1].storage,
+          userid: props.selecteddata.userid,
+        });
+      }
     },
   };
 
@@ -341,16 +348,16 @@ export default function Archive(props) {
   // Start restore or check restore status for Deep Glacier data
   async function restoreDataset() {
     await props.setbuttonloading(true);
-    var restorestatus = await window.electron.restoredata(selectedData);
+    var restorestatus = await window.electron.restoredata(props.selecteddata);
     restorestatus.statusnotification !== ""
       ? props.opennotification(restorestatus.statusnotification)
       : console.log("no notification");
     await props.setbuttonloading(false);
     await reloadArchive(); // Download updated versions of metadata in archivemeta
-    setSelectedData({
-      dataid: selectedData.dataid,
+    props.setselecteddata({
+      dataid: props.selecteddata.dataid,
       status: restorestatus.status, // Refresh row selection to get fresh "status" value
-      storage: selectedData.storage,
+      storage: props.selecteddata.storage,
     });
   }
 
@@ -377,6 +384,10 @@ export default function Archive(props) {
       props.setdownloadparams(params);
       props.setdownloadstate(true);
     }
+  }
+
+  async function stopDownload() {
+    await props.setdownloadstate(false);
   }
 
   return (
@@ -412,6 +423,7 @@ export default function Archive(props) {
             pagination={false}
             columns={columns}
             dataSource={props.archivemeta}
+            rowClassName={(record) => !record.enabled}
             scroll={{
               y: 100,
               x: "max-content",
@@ -431,7 +443,8 @@ export default function Archive(props) {
                 onClick={
                   props.lockui === true ||
                   props.uitoggle === true ||
-                  props.downloadstate === true
+                  props.downloadstate === true ||
+                  props.buttonloading === true
                     ? null
                     : choosePath
                 }
@@ -441,10 +454,10 @@ export default function Archive(props) {
             }
           />
         </Col>
-        <Col span={6}></Col>
+        <Col span={2}></Col>
         <Col span={6}>
           <Popover
-            placement="left"
+            placement="bottomLeft"
             content={
               "Select a row and a local download path in order to start download."
             }
@@ -453,16 +466,17 @@ export default function Archive(props) {
               <Button
                 disabled={
                   props.lockui === true ||
-                  selectedData.dataid === "" ||
+                  props.selecteddata.dataid === "" ||
                   pathName.path === "" ||
-                  props.downloadstate === true
+                  props.downloadstate === true ||
+                  props.buttonloading === true
                 }
                 type="primary"
                 size="middle"
                 block
                 onClick={() => {
                   downloadData({
-                    dataid: selectedData.dataid,
+                    dataid: props.selecteddata.dataid,
                     localpath: pathName.path,
                   });
                 }}
@@ -482,6 +496,23 @@ export default function Archive(props) {
               </Button>
             )}
           </Popover>
+        </Col>
+        <Col span={4}>
+          <Button
+            disabled={
+              props.lockui === true ||
+              props.selecteddata.dataid === "" ||
+              pathName.path === "" ||
+              props.downloadstate === false
+            }
+            type="danger"
+            size="middle"
+            block
+            icon={<StopOutlined />}
+            onClick={() => stopDownload()}
+          >
+            Stop Download
+          </Button>
         </Col>
       </Row>
     </Card>
