@@ -187,7 +187,7 @@ export default function Upload(props) {
   }
 
   async function stopUpload() {
-    await props.setuploadstate(false);
+    await props.setuploadcancel(true);
   }
 
   return (

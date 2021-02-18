@@ -72,34 +72,12 @@ export default function App() {
   const [downloadCount, setDownloadCount] = useState(0); // Counter for file upload
   const [downloadList, setDownloadList] = useState([]); // Hold list of files for upload job
 
-  // const metaDataInit = {
-  //   // Used to initialize and reset metaData state
-  //   apix: "",
-  //   camera: "",
-  //   cs: "",
-  //   dataid: "",
-  //   dataset: "",
-  //   date: "",
-  //   description: "",
-  //   dose: "",
-  //   exposuretime: "",
-  //   filecount: "",
-  //   filter: "",
-  //   frames: "",
-  //   mag: "",
-  //   microscope: "",
-  //   path: "",
-  //   status: "",
-  //   storage: "",
-  //   timestamp: "",
-  //   uploadcompleted: "",
-  //   voltage: "",
-  // };
   const [uploadPathName, setUploadPathName] = useState({ path: "" });
   const [uploadTableLoading, setUploadTableLoading] = useState(false);
   const [fileList, setFileList] = useState([]); // Hold list of files for upload job
   const [metaData, setMetaData] = useState({});
   const [uploadState, setUploadState] = useState(false); // Set whether user has started upload job
+  const [uploadCancel, setUploadCancel] = useState(false); // Used to trigger upload cancel
   const [uploadAWS, setUploadAWS] = useState(false); // Set whether AWS file upload active
   const [uploadCount, setUploadCount] = useState(0); // Counter for file upload
   const [uiToggle, setUiToggle] = useState(false); // Used to toggle UI after start and stop of upload
@@ -254,10 +232,14 @@ export default function App() {
       dataUpload(transferparams); // Start transfer for the file
     } else if (uploadState === true && uploadCount === fileList.length) {
       endUpload();
-    } else if (uploadState === false && Object.keys(metaData).length !== 0) {
+    } else if (
+      uploadState === false &&
+      Object.keys(metaData).length !== 0 &&
+      uploadCancel === true
+    ) {
       cancelUpload();
     }
-  }, [uploadState, uploadAWS]);
+  }, [uploadState, uploadAWS, uploadCancel]);
 
   async function dataUpload(params) {
     setUploadAWS(true); // Set state before start AWS transfer
@@ -266,6 +248,7 @@ export default function App() {
     setUploadAWS(false); // Set state after AWS transfer concludes
   }
   async function endUpload() {
+    await setUploadState(false);
     await setUiToggle(false);
     await setUploadCount(0); // Reset transfer count
     await window.electron.updatemeta({
@@ -275,6 +258,8 @@ export default function App() {
     });
     await setGetArchive(true);
     await setMetaData({}); // Clear current metadata
+    await setUiToggle(false);
+    await setUploadCount(0); // Reset transfer count
     await setUploadState(false);
     openNotification("Upload complete.");
   }
@@ -288,12 +273,14 @@ export default function App() {
     // });
     await setGetArchive(true);
     await setMetaData({}); // Clear current metadata
+    await setUploadState(false);
+    await setUploadCancel(false);
     openNotification("Upload canceled.");
   }
 
   // Handle metadata upload
   useEffect(() => {
-    if (metaData.data !== "") {
+    if (Object.keys(metaData).length !== 0) {
       sendMetaData(metaData);
     }
   }, [metaData]);
@@ -504,6 +491,7 @@ export default function App() {
                     setmetadata={setMetaData}
                     uploadstate={uploadState}
                     setuploadstate={setUploadState}
+                    setuploadcancel={setUploadCancel}
                     uploadaws={uploadAWS}
                     setuploadaws={setUploadAWS}
                     uploadcount={uploadCount}
