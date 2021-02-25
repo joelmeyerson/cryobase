@@ -42,7 +42,7 @@ export default function Settings(props) {
       <Row>
         <Col>
           <span>
-            <Tag>Version: 1.0.2</Tag>
+            <Tag>Version: 1.0.3</Tag>
           </span>
           <br></br>
           <span>

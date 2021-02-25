@@ -11,8 +11,10 @@ const AWS = require("aws-sdk");
 const fse = require("fs-extra");
 const appName = app.getName();
 
-const s3 = new AWS.S3();
 var bucket = "";
+process.env['AWS_ACCESS_KEY_ID'] = ""
+process.env['AWS_SECRET_ACCESS_KEY'] = ""
+var s3 = new AWS.S3();
 
 const env = process.env.NODE_ENV || "production";
 
@@ -102,9 +104,23 @@ function createWindow() {
   ipcMain.handle("configureaws", async (event, arg) => {
     bucket = arg.bucket;
     AWS.config.accessKeyId = arg.accessKey;
-    process.env['AWS_ACCESS_KEY_ID'] = arg.accessKey; // Needed for Linux
+    process.env['AWS_ACCESS_KEY_ID'] = arg.accessKey;
     AWS.config.secretAccessKey = arg.secretKey;
-    process.env['AWS_SECRET_ACCESS_KEY'] = arg.secretKey; // Needed for Linux
+    process.env['AWS_SECRET_ACCESS_KEY'] = arg.secretKey;
+
+    var creds = new AWS.Credentials({
+      accessKeyId: arg.accessKey,
+      secretAccessKey: arg.secretKey,
+      sessionToken: null,
+    });
+
+    AWS.config.credentials = creds
+
+    // AWS.config.getCredentials(function(err) {
+    //   if (err) console.log(err.stack); // credentials not loaded
+    //   else console.log("Access Key:", AWS.config.credentials.accessKeyId);
+    // })
+
     var params = {
       Bucket: bucket,
       MaxKeys: 1,
@@ -220,6 +236,7 @@ function createWindow() {
 
   // Function to list keys from input params (called locally)
   async function listKeys(params) {
+    s3 = new AWS.S3(); // Regenerate S3 object in order to get latest credentials
     const list = await s3
       .listObjectsV2(params)
       .promise()

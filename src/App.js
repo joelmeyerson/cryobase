@@ -166,6 +166,14 @@ export default function App() {
       }
       localStorage.setItem("archive", JSON.stringify(archiveObjArray)); // Store a copy in local storage for caching
       setArchiveMeta(archiveObjArray);
+    } else {
+      // If downloaded archive is empty this likely means the AWS config was changed to a new account.
+      // Update the archiveMeta state to contain an empty array
+      setArchiveMeta(archiveObjArray);
+      // Also, if the user did change accounts its essential to clear the local copy of the archive
+      if (localStorage.hasOwnProperty("archive") === true) {
+        localStorage.removeItem("archive");
+      }
     }
     setGetArchive(false);
   }

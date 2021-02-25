@@ -6,6 +6,10 @@
 # Requires Terser tool to be installed globally:
 # sudo npm install terser -g
 
+#echo "Deleting app local storage."
+#rm -r ~/Library/ApplicationSupport/CryoBase/
+#echo "Deleting app local storage complete."
+
 echo "Running prebuild minify script."
 
 # Create minified versions of electron.js and preload.js
