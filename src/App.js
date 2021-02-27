@@ -18,14 +18,10 @@ import {
 import "./App.css";
 import Archive from "./Archive.js";
 import Upload from "./Upload.js";
-import Login from "./Login.js";
 import Register from "./Register.js";
 import Settings from "./Settings.js";
-import {
-  validateUser,
-  fetchLicense,
-  validateLicense,
-} from "./Authentication.js";
+import Login from "./auth/Login.js";
+import { fetchLicense, validateLicense } from "./auth/keygen.js";
 
 // Antd notification system
 async function openNotification(notificationText) {

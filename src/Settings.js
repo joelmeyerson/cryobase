@@ -14,9 +14,9 @@ export default function Settings(props) {
   async function onFinish(formvals) {
     await setValidating(true);
     const creds = {
-      "bucket": formvals.bucket,
-      "accessKey": formvals.accesskey,
-      "secretKey": formvals.secretkey,
+      bucket: formvals.bucket,
+      accessKey: formvals.accesskey,
+      secretKey: formvals.secretkey,
     };
     await props.configureaws(creds);
     form.resetFields();

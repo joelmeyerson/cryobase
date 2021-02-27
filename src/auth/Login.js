@@ -1,36 +1,36 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Form, Input, Button, Card, Popover, Row, Col } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
-import {
-  validateUser,
-  fetchLicense,
-  validateLicense,
-  registerUser,
-  createUserToken,
-  createLicense,
-} from "./Authentication.js";
 
-export default function Login(props) {
+import { validateUser, fetchLicense, validateLicense } from "./helpers.js";
+
+export default function Login({
+  setconfigaws,
+  setconfigvalid,
+  setauthuser,
+  setauthuserdata,
+  setauth,
+  opennotification,
+}) {
   const [form] = Form.useForm();
 
   // When component loads reset the user token state variable. Safeguard for when user logs out and the same or another user logs in.
-  useEffect(() => {
-    props.setauthuserdata({})
-  }, []);
+  useEffect(() => setauthuserdata({}), [setauthuserdata]);
 
   // If user succesfully authenticates, check if there is existing AWS config. Prevents new user from accessing previous user's AWS config
   async function checkPreviousUser(authuser) {
     if (localStorage.hasOwnProperty("user") === true) {
       var previoususer = JSON.parse(localStorage.getItem("user"));
       if (authuser !== previoususer) {
-        await props.setconfigaws({ // Clear AWS config from state
+        await setconfigaws({
+          // Clear AWS config from state
           bucket: "",
           accessKey: "",
           secretKey: "",
         });
-        localStorage.removeItem('configaws') // Clear AWS config from local storage
-        props.setconfigvalid(false) // Set AWS config to invalid
+        localStorage.removeItem("configaws"); // Clear AWS config from local storage
+        setconfigvalid(false); // Set AWS config to invalid
         localStorage.setItem("user", JSON.stringify(authuser)); // Store the new user name
       }
     } else {
@@ -44,39 +44,35 @@ export default function Login(props) {
       values.password
     );
     if (dataUser) {
-      const [dataLicense, errorsLicense] = await fetchLicense(
+      const [dataLicense /*errorsLicense*/] = await fetchLicense(
         dataUser.attributes.token
       );
       if (dataLicense.length === 1) {
         // If true then a license was found
         const [
-          metaValidate,
-          dataValidate,
-          errorsValidate,
+          metaValidate, //dataValidate, //errorsValidate,
         ] = await validateLicense(dataUser.attributes.token, dataLicense[0].id);
 
         if (metaValidate.constant === "VALID") {
           // License is valid
           await checkPreviousUser(values.email); // If new user does not match previous user, clear AWS config
-          props.setauthuser(values.email); // Store user email for use inside app
-          props.setauthuserdata(dataUser); // Store token for checking license inside app
-          props.setauth(true); // User is now authenticated
-          props.opennotification("Login successful.");
+          setauthuser(values.email); // Store user email for use inside app
+          setauthuserdata(dataUser); // Store token for checking license inside app
+          setauth(true); // User is now authenticated
+          opennotification("Login successful.");
         } else {
-          props.opennotification("There was an error validating the license.");
+          opennotification("There was an error validating the license.");
         }
       } else if (dataLicense.length === 0) {
         // If true then no license was found
-        props.opennotification("No license was found.");
+        opennotification("No license was found.");
       } else {
-        props.opennotification(
-          "There was an error while retrieving the license."
-        );
+        opennotification("There was an error while retrieving the license.");
       }
     } else if (errorsUser) {
-      props.opennotification("Email and/or password not recognized.");
+      opennotification("Email and/or password not recognized.");
     } else {
-      props.opennotification("There was an error in the login process.");
+      opennotification("There was an error in the login process.");
     }
   }
 
