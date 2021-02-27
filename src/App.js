@@ -18,10 +18,9 @@ import {
 import "./App.css";
 import Archive from "./Archive.js";
 import Upload from "./Upload.js";
-import Register from "./Register.js";
 import Settings from "./Settings.js";
-import Login from "./auth/Login.js";
-import { fetchLicense, validateLicense } from "./auth/keygen.js";
+
+import { Register, Login, license } from "./account";
 
 // Antd notification system
 async function openNotification(notificationText) {
@@ -183,7 +182,7 @@ export default function App() {
       );
       return false;
     } else {
-      const [dataLicense, errorsLicense] = await fetchLicense(
+      const [dataLicense, errorsLicense] = await license.fetch(
         authUserData.attributes.token
       );
       if (errorsLicense) {
@@ -194,10 +193,8 @@ export default function App() {
       } else if (dataLicense.length === 1) {
         // If true then a license was found
         const [
-          metaValidate,
-          dataValidate,
-          errorsValidate,
-        ] = await validateLicense(
+          metaValidate /*dataValidate, errorsValidate,*/,
+        ] = await license.validate(
           authUserData.attributes.token,
           dataLicense[0].id
         );

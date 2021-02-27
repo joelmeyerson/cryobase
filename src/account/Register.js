@@ -1,11 +1,7 @@
 import React from "react";
 import { Form, Input, Button, Card, Row, Col } from "antd";
 import { Link, useHistory } from "react-router-dom";
-import {
-  registerUser,
-  createUserToken,
-  createLicense,
-} from "./Authentication.js";
+import { registerUser, createUserToken, createLicense } from "./keygen.js";
 
 export default function Register(props) {
   const [form] = Form.useForm();
