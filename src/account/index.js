@@ -1,7 +1,6 @@
-import Register from "./account/Register.js";
-import Login from "./account/Login.js";
-
-import { fetchLicense, validateLicense } from "./account/keygen.js";
+import Register from "./Register.js";
+import Login from "./Login.js";
+import { fetchLicense, validateLicense } from "./keygen.js";
 
 const license = { fetch: fetchLicense, validate: validateLicense };
 

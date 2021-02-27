@@ -249,19 +249,19 @@ export default function App() {
     setUploadAWS(false); // Set state after AWS transfer concludes
   }
   async function endUpload() {
-    await setUploadState(false);
-    await setUiToggle(false);
-    await setUploadCount(0); // Reset transfer count
+    setUploadState(false);
+    setUiToggle(false);
+    setUploadCount(0); // Reset transfer count
     await window.electron.updatemeta({
       dataid: metaData.dataid,
       key: "uploadcompleted",
       val: true,
     });
-    await setGetArchive(true);
-    await setMetaData({}); // Clear current metadata
-    await setUiToggle(false);
-    await setUploadCount(0); // Reset transfer count
-    await setUploadState(false);
+    setGetArchive(true);
+    setMetaData({}); // Clear current metadata
+    setUiToggle(false);
+    setUploadCount(0); // Reset transfer count
+    setUploadState(false);
     openNotification("Upload complete.");
   }
   async function cancelUpload() {
@@ -272,10 +272,10 @@ export default function App() {
     //   key: "uploadcompleted",
     //   val: false,
     // });
-    await setGetArchive(true);
-    await setMetaData({}); // Clear current metadata
-    await setUploadState(false);
-    await setUploadCancel(false);
+    setGetArchive(true);
+    setMetaData({}); // Clear current metadata
+    setUploadState(false);
+    setUploadCancel(false);
     openNotification("Upload canceled.");
   }
 

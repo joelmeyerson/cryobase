@@ -3,7 +3,7 @@ import { Form, Input, Button, Card, Popover, Row, Col } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 
-import { validateUser, fetchLicense, validateLicense } from "./helpers.js";
+import { validateUser, fetchLicense, validateLicense } from "./keygen.js";
 
 export default function Login({
   setconfigaws,
