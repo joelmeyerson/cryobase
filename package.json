@@ -1,7 +1,7 @@
 {
   "name": "CryoBase",
   "description": "Application for managing cryo-EM data on AWS S3.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "public/electron.js",
   "homepage": "./",
   "private": true,
@@ -51,11 +51,11 @@
       "contents": [
         {
           "x": 110,
-          "y": 150
+          "y": 100
         },
         {
           "x": 240,
-          "y": 150,
+          "y": 100,
           "type": "link",
           "path": "/Applications"
         }

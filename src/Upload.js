@@ -61,7 +61,7 @@ export default function Upload(props) {
 
   // When component loads populuate form with current metadata
   useEffect(() => {
-    if (props.uploadcount !== 0) {
+    if (props.uploadcount !== 0 && Object.keys(props.metadata).length !== 0) {
       form.setFieldsValue({
         apix: props.metadata.apix,
         camera: props.metadata.camera,

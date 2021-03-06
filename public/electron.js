@@ -12,8 +12,8 @@ const fse = require("fs-extra");
 const appName = app.getName();
 
 var bucket = "";
-process.env['AWS_ACCESS_KEY_ID'] = ""
-process.env['AWS_SECRET_ACCESS_KEY'] = ""
+process.env["AWS_ACCESS_KEY_ID"] = "";
+process.env["AWS_SECRET_ACCESS_KEY"] = "";
 var s3 = new AWS.S3();
 
 const env = process.env.NODE_ENV || "production";
@@ -104,9 +104,9 @@ function createWindow() {
   ipcMain.handle("configureaws", async (event, arg) => {
     bucket = arg.bucket;
     AWS.config.accessKeyId = arg.accessKey;
-    process.env['AWS_ACCESS_KEY_ID'] = arg.accessKey;
+    process.env["AWS_ACCESS_KEY_ID"] = arg.accessKey;
     AWS.config.secretAccessKey = arg.secretKey;
-    process.env['AWS_SECRET_ACCESS_KEY'] = arg.secretKey;
+    process.env["AWS_SECRET_ACCESS_KEY"] = arg.secretKey;
 
     var creds = new AWS.Credentials({
       accessKeyId: arg.accessKey,
@@ -114,7 +114,7 @@ function createWindow() {
       sessionToken: null,
     });
 
-    AWS.config.credentials = creds
+    AWS.config.credentials = creds;
 
     // AWS.config.getCredentials(function(err) {
     //   if (err) console.log(err.stack); // credentials not loaded
@@ -409,7 +409,7 @@ function createWindow() {
             "Data has been restored and is available for download.";
         } else if (restorecomplete === false) {
           returnstatus.statusnotification =
-            "Data restoration is still in progress. Restoration will complete about 12 hours after the job was started.";
+            "Data restoration is still in progress. The process will complete about 12 hours after it was started.";
         }
         break;
       case "restored": // Fall through to next case
@@ -472,24 +472,24 @@ function createWindow() {
     var filename = splitkey[splitkey.length - 1];
 
     // Check for sub-directories in key
-    var startpos = 3; // Start after "user" and "userid" and "dataid"
+    var startpos = 0; // Start parsing at the beginning of key
     var endpos = splitkey.length - 1; // End on last element in array
     var path = "";
-
+    //console.log("Key: ", arg.key)
     for (var i = startpos; i <= endpos; i++) {
       var pathelement = splitkey[i];
-      //console.log(pathelement);
+      //console.log("Pathelement: ", pathelement);
       if (pathelement === filename) {
         break;
       } else if (!fs.existsSync(arg.downloadpath + "/" + path + pathelement)) {
         //console.log("dir created");
-        //console.log(arg.downloadpath + path + pathelement)
+        //console.log(arg.downloadpath + "/" + path + pathelement)
         fs.mkdirSync(arg.downloadpath + "/" + path + pathelement);
         path = path + pathelement + "/";
-        //console.log(path);
+        //console.log("Path1: ", path);
       } else {
         path = path + pathelement + "/";
-        //console.log(path);
+        //console.log("Path2: ",path);
       }
     }
 

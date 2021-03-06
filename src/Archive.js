@@ -101,7 +101,7 @@ export default function Archive(props) {
         } else if (record.uploadcompleted === false) {
           return (
             <Popover
-              content={"Warning: dataset upload was incomplete."}
+              content={"Warning: dataset upload was not completed."}
               placement="left"
             >
               <span>
@@ -469,7 +469,10 @@ export default function Archive(props) {
                   props.selecteddata.dataid === "" ||
                   pathName.path === "" ||
                   props.downloadstate === true ||
-                  props.buttonloading === true
+                  props.buttonloading === true ||
+                  props.selecteddata.status === "archived" ||
+                  props.selecteddata.status === "restoring" ||
+                  props.selecteddata.status === "archiving"
                 }
                 type="primary"
                 size="middle"

@@ -229,7 +229,8 @@ export default function App() {
     if (
       uploadState === true &&
       uploadAWS === false &&
-      uploadCount < fileList.length
+      uploadCount < fileList.length &&
+      uploadCancel === false
     ) {
       var transferparams = {
         file: fileList[uploadCount].name,
@@ -241,8 +242,8 @@ export default function App() {
     } else if (uploadState === true && uploadCount === fileList.length) {
       endUpload();
     } else if (
-      uploadState === false &&
-      Object.keys(metaData).length !== 0 &&
+      //uploadState === true &&
+      //Object.keys(metaData).length !== 0 &&
       uploadCancel === true
     ) {
       cancelUpload();
@@ -281,8 +282,8 @@ export default function App() {
     // });
     await setGetArchive(true);
     await setMetaData({}); // Clear current metadata
-    await setUploadState(false);
     await setUploadCancel(false);
+    await setUploadState(false);
     openNotification("Upload canceled.");
   }
 

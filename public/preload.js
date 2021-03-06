@@ -2,7 +2,6 @@ const { contextBridge, ipcRenderer } = require("electron");
 const { fs } = require("fs");
 
 contextBridge.exposeInMainWorld("electron", {
-
   configureaws: async (config) => {
     const validationstatus = await ipcRenderer.invoke("configureaws", config);
     return validationstatus;
