@@ -387,10 +387,18 @@ function createWindow() {
             Key: objectlist[i],
           };
           var header = await s3.headObject(headparams).promise();
+          console.log(header);
           headerlist.push({
             Key: objectlist[i], // Key string
             Restore: header.Restore, // Restore status
           });
+
+          if (header.Restore === undefined) {
+            returnstatus.status = "archived";
+            returnstatus.statusnotification =
+              "Data has returned to Archived status.";
+            break;
+          }
 
           // Example entry if key restore in progress: Restore: 'ongoing-request="true"',
           // Example entry if key restore complete: Restore: 'ongoing-request="false", expiry-date="Fri, 31 Dec 1999 00:00:00 GMT"',
@@ -400,6 +408,9 @@ function createWindow() {
           } else if (header.Restore.includes("false")) {
             restorecount = restorecount + 1; // Keep count of keys that have been restored so far
           }
+        }
+        if ((returnstatus.status = "archived")) {
+          break;
         }
         if (restorecomplete === true) {
           // If entire dataset is restored
