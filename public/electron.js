@@ -387,7 +387,6 @@ function createWindow() {
             Key: objectlist[i],
           };
           var header = await s3.headObject(headparams).promise();
-          console.log(header);
           headerlist.push({
             Key: objectlist[i], // Key string
             Restore: header.Restore, // Restore status
