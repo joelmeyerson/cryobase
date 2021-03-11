@@ -408,7 +408,7 @@ function createWindow() {
             restorecount = restorecount + 1; // Keep count of keys that have been restored so far
           }
         }
-        if ((returnstatus.status = "archived")) {
+        if (returnstatus.status == "archived") {
           break;
         }
         if (restorecomplete === true) {
